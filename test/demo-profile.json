@@ -1,0 +1,180 @@
+{
+  "app": "qiuzhao-autofill",
+  "version": 5,
+  "profile": {
+    "name": "演示用户",
+    "familyName": "演",
+    "givenName": "示用户",
+    "gender": "男",
+    "birthDate": "2000-01",
+    "politicalStatus": "群众",
+    "nation": "汉族",
+    "household": "山东省青岛市市南区",
+    "householdType": "非农业户口",
+    "maritalStatus": "未婚",
+    "height": "175",
+    "weight": "65",
+    "idNumber": "110101200001010010",
+    "phone": "13800138000",
+    "email": "demo@example.com",
+    "wechat": "demo_user_2026",
+    "school": "演示大学",
+    "major": "计算机科学与技术",
+    "degree": "本科",
+    "graduationDate": "2026-06",
+    "graduateStatus": "应届",
+    "englishLevel": "六级",
+    "englishScore": "520",
+    "computerLevel": "国家二级或同等水平",
+    "gpa": "3.6/4.0",
+    "rank": "前20%",
+    "disciplineHighest": "工学",
+    "disciplineBachelor": "工学",
+    "educationSchool": "演示大学",
+    "educationMajor": "计算机科学与技术",
+    "educationStartDate": "2022-09",
+    "educationEndDate": "2026-06",
+    "educationDegree": "本科",
+    "educationDiscipline": "工学",
+    "academicDegree": "工学学士",
+    "trainingMethod": "非定向（统招、并轨）",
+    "educationRank": "前20%",
+    "unifiedRecruitment": "是",
+    "overseasEducation": "否",
+    "expectedCity": "山东省青岛市市南区",
+    "interviewSite": "青岛",
+    "expectedPosition": "包装设计工程师",
+    "expectedSalary": "10k-15k",
+    "homepage": "https://example.com",
+    "intro": "熟悉包装结构设计、三维建模与数据分析，具备跨团队协作和项目落地能力。",
+    "projectName": "智能包装设计系统",
+    "projectStartDate": "2024-03",
+    "projectEndDate": "2024-08",
+    "projectDescription": "负责需求分析、结构方案设计与原型验证，完成测试数据整理和设计迭代。",
+    "internshipCompany": "演示科技有限公司",
+    "internshipRole": "产品设计实习生",
+    "internshipStartDate": "2024-07",
+    "internshipEndDate": "2024-09",
+    "internshipContent": "参与包装方案调研、建模、样品测试与文档整理，协助推进设计优化。",
+    "languageType": "英语",
+    "languageProficiency": "熟练",
+    "awardName": "校级创新设计大赛一等奖",
+    "awardDate": "2024-12",
+    "awardLevel": "院校级",
+    "awardDescription": "完成创新包装方案设计并获得校级一等奖。",
+    "researchName": "智能包装结构设计研究",
+    "researchDate": "2025-05",
+    "researchLevel": "院校级",
+    "researchDescription": "研究包装结构参数与性能之间的关系，完成实验分析与成果整理。",
+    "willingAllocation": "是",
+    "acceptRelocation": "是",
+    "acceptUnderdevelopedOverseas": "否",
+    "hasRelativesAtCompany": "否",
+    "recommendationCode": "DEMO2026",
+    "otherLanguage": "日语",
+    "otherLanguageLevel": "N2",
+    "scholarship": "院级(校级)奖学金1次",
+    "outstandingGraduateLevel": "校级",
+    "practiceCount": "2或3个",
+    "studentCadreLevel": "主席级别（含主席团）、班长、团支书",
+    "studentRoles": "班长/团支书",
+    "competitionAwardLevel": "院校级",
+    "recruitmentSource": "学校就业网/就业公众号",
+    "educationBulk": [
+      {
+        "educationSchool": "青岛实验中学",
+        "educationMajor": "理科",
+        "educationStartDate": "2019-09",
+        "educationEndDate": "2022-06",
+        "educationDegree": "高中"
+      },
+      {
+        "educationSchool": "演示大学",
+        "educationMajor": "计算机科学与技术",
+        "educationStartDate": "2022-09",
+        "educationEndDate": "2026-06",
+        "educationDegree": "本科",
+        "educationDiscipline": "工学",
+        "academicDegree": "工学学士",
+        "trainingMethod": "非定向（统招、并轨）",
+        "educationRank": "前20%"
+      }
+    ],
+    "projectsBulk": [
+      {
+        "projectName": "智能包装设计系统",
+        "projectStartDate": "2024-03",
+        "projectEndDate": "2024-08",
+        "projectDescription": "负责需求分析、结构方案设计与原型验证，完成测试数据整理和设计迭代。"
+      },
+      {
+        "projectName": "校园招聘数据看板",
+        "projectStartDate": "2025-01",
+        "projectEndDate": "2025-04",
+        "projectDescription": "设计数据指标与交互原型，完成前端实现和可用性测试。"
+      }
+    ],
+    "internshipsBulk": [
+      {
+        "internshipCompany": "演示科技有限公司",
+        "internshipRole": "产品设计实习生",
+        "internshipStartDate": "2024-07",
+        "internshipEndDate": "2024-09",
+        "internshipContent": "参与包装方案调研、建模、样品测试与文档整理，协助推进设计优化。"
+      },
+      {
+        "internshipCompany": "青岛示例智能有限公司",
+        "internshipRole": "产品运营实习生",
+        "internshipStartDate": "2025-02",
+        "internshipEndDate": "2025-05",
+        "internshipContent": "整理用户反馈与运营数据，协助完成需求分析和活动复盘。"
+      }
+    ],
+    "languagesBulk": [
+      { "languageType": "英语", "languageProficiency": "熟练" },
+      { "languageType": "日语", "languageProficiency": "入门" }
+    ],
+    "awardsBulk": [
+      {
+        "awardName": "校级创新设计大赛一等奖",
+        "awardDate": "2024-12",
+        "awardLevel": "院校级",
+        "awardDescription": "完成创新包装方案设计并获得一等奖。"
+      },
+      {
+        "awardName": "山东省大学生创新竞赛二等奖",
+        "awardDate": "2025-06",
+        "awardLevel": "省区级",
+        "awardDescription": "负责方案设计、数据分析与现场答辩。"
+      },
+      {
+        "awardName": "优秀学生干部",
+        "awardDate": "2025-12",
+        "awardLevel": "院校级",
+        "awardDescription": "因班级组织与学生服务工作获得表彰。"
+      }
+    ],
+    "researchBulk": [
+      {
+        "researchName": "智能包装结构设计研究",
+        "researchDate": "2025-05",
+        "researchLevel": "院校级",
+        "researchDescription": "研究包装结构参数与性能之间的关系，完成实验分析与成果整理。"
+      },
+      {
+        "researchName": "求职表单自动化研究",
+        "researchDate": "2026-02",
+        "researchLevel": "院校级",
+        "researchDescription": "研究复杂表单的字段识别、交互控件适配与可靠性验证。"
+      }
+    ],
+    "customs": []
+  },
+  "settings": {
+    "autoFill": false,
+    "overwrite": true,
+    "aiEnabled": false
+  },
+  "learned": {},
+  "siteRules": {}
+}

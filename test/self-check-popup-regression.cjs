@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {JSDOM}=require(process.env.QIUZHAO_JSDOM||'jsdom');
+const source=fs.readFileSync(path.join(__dirname,'../popup/popup.js'),'utf8');
+const dom=new JSDOM('<div id="selfCheckResult" hidden></div>',{runScripts:'outside-only'}),w=dom.window;
+let exported,located,closed=false;
+w.$=s=>w.document.querySelector(s);w.Blob=class{constructor(parts){exported=JSON.parse(parts.join(''));}};
+w.URL.createObjectURL=()=> 'blob:test';w.URL.revokeObjectURL=()=>{};w.HTMLAnchorElement.prototype.click=function(){};
+w.chrome={tabs:{sendMessage:async(tab,msg)=>{located={tab,msg};return {ok:true};}}};w.close=()=>{closed=true;};
+w.eval(source.slice(source.indexOf('function renderSelfCheck('),source.indexOf('async function fillCurrentTab(')));
+const report={at:'2026-09-08',counts:{verified:0,failed:1,missing:0,manual:0},scope:'current-frame',persistence:'not-tested',items:[{id:'field-1',label:'<script>secret-label</script>',status:'failed',reason:'value-reverted',value:'SECRET-VALUE'}]};
+w.renderSelfCheck(report,42);
+assert.equal(w.document.querySelectorAll('script').length,0);
+const buttons=w.document.querySelectorAll('button');buttons[1].click();
+assert(!JSON.stringify(exported).includes('SECRET-VALUE'));assert(!JSON.stringify(exported).includes('secret-label'));assert.equal(exported.items[0].id,'field-1');
+(async()=>{await buttons[0].onclick();assert.equal(located.tab,42);assert.equal(located.msg.type,'LOCATE_SELF_CHECK');assert.equal(closed,true);dom.window.close();console.log('PASS self-check popup: text safety, locate, redacted export');})().catch(e=>{console.error(e);process.exitCode=1;});

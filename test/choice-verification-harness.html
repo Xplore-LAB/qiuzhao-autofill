@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>选项验证回归</title>
+<style>.form-item{margin:20px}.phoenix-select,.phoenix-radio-group{padding:10px;border:1px solid}.phoenix-radio__circle-wrapper{width:20px;height:20px;border:1px solid;display:inline-block}.common-unmodeled-layer{position:fixed;top:50px;background:white;padding:10px}</style>
+<output id="result">正在验证</output>
+<div class="form-item"><label class="form-item__text">性别</label><div class="phoenix-radio-group"><div class="phoenix-radio-group__radioItem"><div class="phoenix-radio"><div class="phoenix-radio__circle-wrapper"></div><span>男</span></div></div></div></div>
+<div class="form-item"><label class="form-item__text">民族</label><div class="phoenix-select"><span class="phoenix-select__calcEle" style="display:none"></span><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div><span class="phoenix-select__tipEle"></span><input></div></div>
+<script>
+let listener, selected = false;
+window.chrome={storage:{local:{get:async()=>({profile:{gender:'男',nation:'汉族'},settings:{},learned:{},siteRules:{}}),set:async()=>{}},onChanged:{addListener(){}}},runtime:{onMessage:{addListener(fn){listener=fn}},sendMessage:async()=>({ok:true,mappings:[]})}};
+document.querySelector('.phoenix-radio__circle-wrapper').onclick=()=>setTimeout(()=>{
+  document.querySelector('.phoenix-radio').classList.add('phoenix-radio--checked');
+  document.querySelector('.phoenix-radio-group__radioItem').classList.add('phoenix-radio-group__radioItem--checked');
+},250);
+const anchor=document.querySelector('.phoenix-select');
+anchor.onclick=()=>{if(document.querySelector('.common-unmodeled-layer'))return;setTimeout(()=>{
+  const layer=document.createElement('div');layer.className='common-unmodeled-layer';
+  const option=document.createElement('div');option.className='phoenix-selectList__listItem';option.textContent='汉族';
+  option.onclick=()=>{layer.remove();setTimeout(()=>{selected=true;anchor.querySelector('.phoenix-select__placeHolder').classList.remove('phoenix-select__placeHolder--show');anchor.querySelector('.phoenix-select__placeHolder').textContent='汉族';anchor.querySelector('.phoenix-select__tipEle').textContent='汉族';anchor.querySelector('input').value='汉族';},300);};layer.append(option);document.body.append(layer);
+},300);};
+</script>
+<script src="../content/content.js"></script>
+<script>
+listener({type:'FILL_FORM',overwrite:true},null,r=>{
+ const passed=r.filled.length===2 && r.failed.length===0 && r.pageFilledCount===2 && r.pageEmptyCount===0 && selected;
+ document.getElementById('result').textContent=(passed?'通过':'失败')+'：'+JSON.stringify(r);
+});
+</script>

@@ -1,0 +1,6 @@
+{
+  "name": "qiuzhao-hisense-benchmark",
+  "private": true,
+  "scripts": { "test": "node run.cjs", "test:mutations": "node prove-regressions.cjs", "serve": "node serve.cjs" },
+  "devDependencies": { "jsdom": "26.1.0" }
+}

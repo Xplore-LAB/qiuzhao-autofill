@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const source=fs.readFileSync(new URL('../content/content.js',import.meta.url),'utf8');
+const context={isCustomRadioGroup:()=>false,isCustomSelect:()=>true,visibleChoiceLayers:()=>[],ownedChoiceLayer:()=>null,OPTION_SELECTOR:'[role=option]',safeCustomClick:()=>{throw new Error('analysis must never click');},dismissVisibleChoiceLayers:()=>{throw new Error('analysis must never close');}};
+vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('  async function aiControlOptionTexts('),source.indexOf('  async function buildAiRequest('))+'\nthis.options=aiControlOptionTexts;',context);
+assert.equal((await context.options({tagName:'DIV'})).length,0);
+assert.match(source,/!plannedControls\.has\(el\)/);
+assert.match(source,/new Set\(plan\.map\(task => task\.el\)\)/);
+console.log('AI analysis passed: no dropdown clicks or closing, planned controls excluded');

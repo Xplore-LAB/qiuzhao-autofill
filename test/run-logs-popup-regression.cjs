@@ -1,0 +1,25 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {JSDOM}=require(process.env.QIUZHAO_JSDOM||'jsdom');
+const source=fs.readFileSync(path.join(__dirname,'../popup/popup.js'),'utf8');
+const dom=new JSDOM('<div id="runLogsResult" hidden></div>',{runScripts:'outside-only'}),w=dom.window;
+let logs=[];
+w.chrome={storage:{local:{get:async()=>({runLogs:logs})}}};
+w.eval('function $(s){return document.querySelector(s);}'+source.slice(source.indexOf('async function showRunLogs('),source.indexOf('function withUiTimeout('))+'window.show=showRunLogs;');
+(async()=>{try{
+ await w.show();assert.equal(w.document.querySelector('button').disabled,true);
+ logs=[{at:'2026-09-08',host:'<script>bad()</script>',version:'test',outcome:'finished',counts:{verified:1,empty:2},items:[],diagnostics:[]}];
+ await w.show();assert.equal(w.document.querySelectorAll('details').length,1);assert.equal(w.document.querySelectorAll('script').length,0);assert.equal(w.document.querySelector('button').disabled,false);
+ w.eval(fs.readFileSync(path.join(__dirname,'../shared/feedback-loop.js'),'utf8'));
+ let exported;
+ w.Blob=class{constructor(parts){exported=JSON.parse(parts.join(''));}};
+ w.URL.createObjectURL=()=> 'blob:test';w.URL.revokeObjectURL=()=>{};
+ w.HTMLAnchorElement.prototype.click=function(){};
+ logs=[{id:'00000000-0000-4000-8000-000000000001',at:'2026-09-08',host:'fixture.invalid',version:'1.15.0',outcome:'finished',verification:'final',counts:{verified:0,empty:1},items:[{fieldKey:'phone',control:1,status:'failed',reason:'value-reverted',value:'PRIVATE_VALUE'}]}];
+ await w.show();
+ assert(w.document.body.textContent.includes('填写后回退'));
+ const feedback=[...w.document.querySelectorAll('button')].find(b=>b.textContent==='导出问题分析');
+ assert(feedback&&!feedback.disabled);feedback.click();
+ assert.equal(exported.issues[0].status,'observed');assert(!JSON.stringify(exported).includes('PRIVATE_VALUE'));
+ logs=[];await w.show();assert([...w.document.querySelectorAll('button')].every(b=>b.disabled));
+ console.log('PASS log UI: empty state, persistent history, text-only rendering, classified feedback and redacted export');
+}finally{w.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

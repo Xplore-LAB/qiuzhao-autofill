@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>多段履历回归测试</title>
+  <style>
+    body { font-family: sans-serif; }
+    section { margin: 20px 0; }
+    .repeat-row { border: 1px solid #ddd; padding: 8px; margin: 8px 0; }
+    .form-item { margin: 6px 0; }
+    label { display: inline-block; width: 120px; }
+    input, textarea, select { width: 280px; }
+  </style>
+</head>
+<body>
+  <output id="testStatus">测试执行中</output>
+  <section id="ApplicantEducation"><h2>教育经历</h2><div class="repeat-row">
+    <div class="form-item" data-field="educationSchool"><label>学校名称</label><input></div>
+    <div class="form-item" data-field="educationMajor"><label>专业名称</label><input></div>
+    <div class="form-item" data-field="educationStartDate"><label>开始时间</label><input type="month"></div>
+    <div class="form-item" data-field="educationEndDate"><label>结束时间</label><input type="month"></div>
+    <div class="form-item" data-field="educationDegree"><label>学历</label><select><option></option><option>高中</option><option>本科</option></select></div>
+  </div><button type="button" id="ApplicantEducation_addButton">添加教育经历</button></section>
+
+  <section id="ApplicantLanguage"><h2>语言能力</h2><div class="repeat-row">
+    <div class="form-item" data-field="languageType"><label>语言类型</label><select><option></option><option>英语</option><option>日语</option></select></div>
+    <div class="form-item" data-field="languageProficiency"><label>掌握程度</label><select><option></option><option>入门</option><option>熟练</option></select></div>
+  </div><button type="button" id="ApplicantLanguage_addButton">添加语言能力</button></section>
+
+  <section id="ApplicantProject"><h2>项目经历</h2><div class="repeat-row">
+    <div class="form-item" data-field="projectName"><label>项目经历名称</label><input></div>
+    <div class="form-item" data-field="projectStartDate"><label>开始时间</label><input type="month"></div>
+    <div class="form-item" data-field="projectEndDate"><label>结束时间</label><input type="month"></div>
+    <div class="form-item" data-field="projectDescription"><label>项目经历描述</label><textarea></textarea></div>
+  </div><button type="button" id="ApplicantProject_addButton">添加项目经历</button></section>
+
+  <section id="ApplicantIntern"><h2>实习经历</h2><div class="repeat-row">
+    <div class="form-item" data-field="internshipCompany"><label>单位名称</label><input></div>
+    <div class="form-item" data-field="internshipRole"><label>角色</label><input></div>
+    <div class="form-item" data-field="internshipStartDate"><label>开始时间</label><input type="month"></div>
+    <div class="form-item" data-field="internshipEndDate"><label>结束时间</label><input type="month"></div>
+    <div class="form-item" data-field="internshipContent"><label>实习内容</label><textarea></textarea></div>
+  </div><button type="button" id="ApplicantIntern_addButton">添加实习经历</button></section>
+
+  <section id="ApplicantAward"><h2>获奖情况</h2><div class="repeat-row">
+    <div class="form-item" data-field="awardName"><label>奖项名称</label><input></div>
+    <div class="form-item" data-field="awardDate"><label>获奖时间</label><input type="month"></div>
+    <div class="form-item" data-field="awardLevel"><label>获奖级别</label><select><option></option><option>院校级</option><option>省区级</option></select></div>
+    <div class="form-item" data-field="awardDescription"><label>获奖描述</label><textarea></textarea></div>
+  </div><button type="button" id="ApplicantAward_addButton">添加获奖情况</button></section>
+
+  <section id="ApplicantResearch"><h2>研究成果</h2><div class="repeat-row">
+    <div class="form-item" data-field="researchName"><label>名称</label><input></div>
+    <div class="form-item" data-field="researchDate"><label>时间</label><input type="month"></div>
+    <div class="form-item" data-field="researchLevel"><label>等级</label><input></div>
+    <div class="form-item" data-field="researchDescription"><label>描述</label><textarea></textarea></div>
+  </div><button type="button" id="ApplicantResearch_addButton">添加研究成果</button></section>
+
+  <button id="submitButton" type="submit">预览并提交</button>
+  <script>
+    (() => {
+      let submitClicks = 0;
+      document.getElementById('submitButton').addEventListener('click', event => { event.preventDefault(); submitClicks++; });
+      for (const button of document.querySelectorAll('[id$="_addButton"]')) {
+        button.addEventListener('click', () => {
+          const section = button.closest('section');
+          const template = section.querySelector('.repeat-row');
+          const row = template.cloneNode(true);
+          row.querySelectorAll('input,textarea,select').forEach(control => { control.value = ''; });
+          button.before(row);
+        });
+      }
+      const profile = {
+        educationBulk: [
+          {educationSchool:'第一中学',educationMajor:'理科',educationStartDate:'2019-09',educationEndDate:'2022-06',educationDegree:'高中'},
+          {educationSchool:'演示大学',educationMajor:'计算机科学与技术',educationStartDate:'2022-09',educationEndDate:'2026-06',educationDegree:'本科'}
+        ],
+        languagesBulk: [
+          {languageType:'英语',languageProficiency:'熟练'},
+          {languageType:'日语',languageProficiency:'入门'}
+        ],
+        projectsBulk: [
+          {projectName:'项目甲',projectStartDate:'2024-03',projectEndDate:'2024-08',projectDescription:'项目甲描述'},
+          {projectName:'项目乙',projectStartDate:'2025-01',projectEndDate:'2025-04',projectDescription:'项目乙描述'}
+        ],
+        internshipsBulk: [
+          {internshipCompany:'实习单位甲',internshipRole:'角色甲',internshipStartDate:'2024-07',internshipEndDate:'2024-09',internshipContent:'实习内容甲'},
+          {internshipCompany:'实习单位乙',internshipRole:'角色乙',internshipStartDate:'2025-02',internshipEndDate:'2025-05',internshipContent:'实习内容乙'}
+        ],
+        awardsBulk: `奖励名称：奖项甲
+颁发时间：2024-12
+奖励级别：院校级
+奖励描述：奖项甲描述
+
+荣誉名称：奖项乙
+获奖日期：2025-06
+荣誉级别：省区级
+奖项说明：奖项乙描述
+
+获奖奖项：奖项丙
+奖励时间：2025-12
+奖项级别：院校级
+获奖说明：奖项丙描述`,
+        researchBulk: `研究项目：成果甲
+研究时间：2025-05
+研究类型：院校级
+研究内容：成果甲描述
+
+论文题目：成果乙
+发表时间：2026-02
+成果类型：院校级
+研究职责：成果乙描述`,
+        customs: []
+      };
+      window.chrome = {
+        storage: { local: { get: async () => ({profile,settings:{},learned:{},siteRules:{}}), set: async () => undefined }, onChanged: { addListener: () => undefined } },
+        runtime: { onMessage: { addListener: fn => { window.__fillListener = fn; } }, sendMessage: async () => ({ok:true,mappings:[]}) }
+      };
+      window.__repeatSubmitClicks = () => submitClicks;
+    })();
+  </script>
+  <script src="../content/content.js?v=11000"></script>
+  <script>
+    window.__REPEAT_DONE = new Promise(resolve => {
+      window.__fillListener({type:'SCAN_FORM'},null,overview => {
+        window.__fillListener({type:'FILL_FORM',overwrite:true,useAI:false},null,async result => {
+        const read = (section, field) => Array.from(document.querySelectorAll(section + ' [data-field="' + field + '"] input,' + section + ' [data-field="' + field + '"] textarea,' + section + ' [data-field="' + field + '"] select')).map(element => element.value);
+        const values = {
+          educationSchools: read('#ApplicantEducation','educationSchool'),
+          educationMajors: read('#ApplicantEducation','educationMajor'),
+          languages: read('#ApplicantLanguage','languageType'),
+          projects: read('#ApplicantProject','projectName'),
+          internships: read('#ApplicantIntern','internshipCompany'),
+          awards: read('#ApplicantAward','awardName'),
+          research: read('#ApplicantResearch','researchName')
+        };
+        const expected = {
+          educationSchools:['第一中学','演示大学'],
+          educationMajors:['理科','计算机科学与技术'],
+          languages:['英语','日语'],
+          projects:['项目甲','项目乙'],
+          internships:['实习单位甲','实习单位乙'],
+          awards:['奖项甲','奖项乙','奖项丙'],
+          research:['成果甲','成果乙']
+        };
+        const repeatPlan = Object.fromEntries((overview.repeatSections || []).map(item => [item.label, item.records]));
+        window.__REPEAT_RESULT = {overview,result,values,submitClicks:window.__repeatSubmitClicks()};
+        const overviewPassed = overview.totalControls === 24 && overview.ruleCandidates === 24 && repeatPlan['获奖情况'] === 3 && repeatPlan['研究成果'] === 2;
+        const countBefore = document.querySelectorAll('.repeat-row').length;
+        const snapshotBefore = Array.from(document.querySelectorAll('input,textarea,select')).map(el=>el.value);
+        const secondResult = await new Promise(done => window.__fillListener({type:'FILL_FORM',overwrite:true,useAI:false},null,done));
+        const repeatStable = countBefore === document.querySelectorAll('.repeat-row').length && JSON.stringify(snapshotBefore) === JSON.stringify(Array.from(document.querySelectorAll('input,textarea,select')).map(el=>el.value));
+        window.__REPEAT_RESULT.secondResult = secondResult;
+        window.__REPEAT_RESULT.repeatStable = repeatStable;
+        const fieldCases = {
+          ApplicantEducation: {educationSchool:['第一中学','演示大学'],educationMajor:['理科','计算机科学与技术'],educationStartDate:['2019-09','2022-09'],educationEndDate:['2022-06','2026-06'],educationDegree:['高中','本科']},
+          ApplicantLanguage: {languageType:['英语','日语'],languageProficiency:['熟练','入门']},
+          ApplicantProject: {projectName:['项目甲','项目乙'],projectStartDate:['2024-03','2025-01'],projectEndDate:['2024-08','2025-04'],projectDescription:['项目甲描述','项目乙描述']},
+          ApplicantIntern: {internshipCompany:['实习单位甲','实习单位乙'],internshipRole:['角色甲','角色乙'],internshipStartDate:['2024-07','2025-02'],internshipEndDate:['2024-09','2025-05'],internshipContent:['实习内容甲','实习内容乙']},
+          ApplicantAward: {awardName:['奖项甲','奖项乙','奖项丙'],awardDate:['2024-12','2025-06','2025-12'],awardLevel:['院校级','省区级','院校级'],awardDescription:['奖项甲描述','奖项乙描述','奖项丙描述']},
+          ApplicantResearch: {researchName:['成果甲','成果乙'],researchDate:['2025-05','2026-02'],researchLevel:['院校级','院校级'],researchDescription:['成果甲描述','成果乙描述']}
+        };
+        const checks = Object.entries(fieldCases).flatMap(([section,fields])=>Object.entries(fields).map(([field,expected])=>{
+          const actual=read('#'+section,field);return {id:section+'.'+field,expected,actual,pass:JSON.stringify(expected)===JSON.stringify(actual)};
+        }));
+        checks.push({id:'repeat.stable',expected:true,actual:repeatStable,pass:repeatStable});
+        window.__REPEAT_RESULT.checks=checks;
+        const passed = overviewPassed && repeatStable && checks.every(c=>c.pass) && JSON.stringify(values) === JSON.stringify(expected) && window.__repeatSubmitClicks() === 0;
+        document.body.dataset.repeatPass = String(passed);
+        document.getElementById('testStatus').textContent = passed
+          ? '测试通过：总览 24 个字段，规则可填 24 个；全部重复记录已填写，二次执行不增行且值不变，提交按钮点击 0 次'
+          : '测试失败：总览 ' + overview.totalControls + ' 个，规则可填 ' + overview.ruleCandidates + ' 个，AI 待判断 ' + JSON.stringify(overview.aiLabels) + '，计划 ' + JSON.stringify(repeatPlan);
+        resolve(window.__REPEAT_RESULT);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

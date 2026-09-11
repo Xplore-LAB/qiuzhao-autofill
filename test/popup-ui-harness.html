@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>插件弹窗交互回归测试</title>
+</head>
+<body>
+  <p id="loading">正在加载真实插件弹窗…</p>
+  <script>
+    fetch('../popup/popup.html')
+      .then(response => response.text())
+      .then(html => {
+        const prepared = html
+          .replace('<head>', '<head><base href="../popup/">')
+          .replace(
+            '<script src="../shared/providers.js"><\/script>',
+            '<script src="../test/popup-mock-chrome.js"><\/script><script src="../shared/providers.js"><\/script>'
+          );
+        document.open();
+        document.write(prepared);
+        document.close();
+      });
+  </script>
+</body>
+</html>

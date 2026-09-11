@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "秋招网申自动填充助手",
+  "version": "1.15.0",
+  "version_name": "1.15.0-dev（待实页验收）",
+  "description": "先总览页面字段，再用本地规则和可选 AI 填写网申，支持多条经历、奖励与研究成果。",
+  "permissions": ["storage", "contextMenus"],
+  "host_permissions": [
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.deepseek.com/*",
+    "https://dashscope.aliyuncs.com/*",
+    "https://api.moonshot.cn/*",
+    "https://api.siliconflow.cn/*",
+    "https://api.minimaxi.com/*",
+    "https://api.minimax.io/*"
+  ],
+  "optional_host_permissions": ["https://*/*", "http://localhost/*", "http://127.0.0.1/*"],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "秋招网申自动填充助手"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "commands": {
+    "fill-current-page": {
+      "suggested_key": {
+        "default": "Alt+F"
+      },
+      "description": "在当前页面填充网申表单"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const source=fs.readFileSync(new URL('../content/content.js',import.meta.url),'utf8');
+const context={};vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('  function ownedChoiceLayer('),source.indexOf('  const OPTION_SELECTOR'))+'\nthis.owned=ownedChoiceLayer;',context);
+const node=(id,children=[])=>({id,querySelectorAll:()=>children,contains(el){return children.includes(el);}});
+const anchor=ids=>({querySelectorAll:()=>[],getAttribute:key=>key==='aria-controls'?ids:null});
+const child=node('options'),outer=node('popup',[child]),other=node('other');
+assert.equal(context.owned(anchor('options'),[outer,child,other]),outer);
+assert.equal(context.owned(anchor(''),[outer,child]),outer);
+assert.equal(context.owned(anchor(''),[outer,other]),null);
+assert.equal(context.owned(anchor('missing'),[other]),null);
+assert.equal(context.owned(anchor('options other'),[outer,other]),null);
+assert.equal(context.owned(anchor(''),[]),null);
+console.log('layer ownership passed: linked popup, nested popup, unrelated popup, ambiguity, missing target');

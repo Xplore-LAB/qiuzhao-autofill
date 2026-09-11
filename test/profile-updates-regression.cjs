@@ -1,0 +1,20 @@
+const assert=require('node:assert/strict');
+const U=require('../shared/profile-updates.js');
+const clone=x=>JSON.parse(JSON.stringify(x));
+(async()=>{
+ const rows=U.diff({name:'原姓名',phone:'旧号码'},{name:'新姓名',phone:'',email:'demo@example.com'});
+ assert.deepEqual(rows.map(r=>r.selected),[false,false,true]);
+ assert.deepEqual(U.apply({name:'原姓名',phone:'旧号码'},rows,['email']),{name:'原姓名',phone:'旧号码',email:'demo@example.com'});
+ assert.throws(()=>U.validate(JSON.parse('{"__proto__":{"polluted":true}}')));
+ assert.throws(()=>U.validate([]));
+ let data={profile:{name:'旧',phone:'旧号'}},fail=false;
+ const storage={get:async()=>clone(data),set:async update=>{if(fail)throw Error('quota');Object.assign(data,clone(update));}};
+ const commit=U.createWriter(storage),expected=clone(data.profile);
+ const [a,b]=await Promise.all([commit({expected,next:{...expected,name:'新'},checkpoint:true}),commit({expected,next:{...expected,phone:'新号'}})]);
+ assert(a.ok&&b.ok);assert.deepEqual(data.profile,{name:'新',phone:'新号'});
+ assert.deepEqual(data.profileRecovery.profile,expected);
+ const conflict=await commit({expected,next:{...expected,name:'另一份'}});assert(conflict.conflict);assert.equal(data.profile.name,'新');
+ const before=clone(data);fail=true;await assert.rejects(commit({expected:data.profile,next:{name:'失败'},checkpoint:true,clearDraft:true}));assert.deepEqual(data,before);
+ fail=false;assert((await commit({expected:data.profile,next:{...data.profile,email:'demo@example.com'}})).ok);
+ console.log('PASS profile updates: opt-in replacements/deletions, preservation, validation, serialized concurrent merge/conflict, atomic recovery, storage failure retry');
+})().catch(e=>{console.error(e);process.exitCode=1;});

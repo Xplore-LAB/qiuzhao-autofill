@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>本地控件回归测试</title>
+  <style>
+    .form-item { display:flex; gap:12px; margin:12px; align-items:center; }
+    .form-item__title { width:100px; }
+    .phoenix-input, .phoenix-select, .phoenix-radio-group { min-width:220px; min-height:32px; border:1px solid #aaa; padding:5px; }
+    .phoenix-radio-group__radioItem { display:inline-block; margin-right:12px; cursor:pointer; }
+    .phoenix-radio-group__radioItem--checked { color:green; }
+    .common-unmodeled-layer { position:fixed; left:300px; top:100px; background:white; border:1px solid #333; padding:8px; z-index:1000; }
+    .phoenix-selectList__listItem { cursor:pointer; padding:5px; }
+  </style>
+</head>
+<body>
+  <script>
+    for (const type of ['error','unhandledrejection']) window.addEventListener(type, e => {
+      const output = document.createElement('output');
+      output.textContent = '回归错误：' + String(e.message || e.reason);
+      document.body.prepend(output);
+    });
+  </script>
+  <div class="form-item" data-test="name">
+    <div class="form-item__title"><label class="form-item__text">姓名</label></div>
+    <div class="form-item__control"><div class="phoenix-input"><input class="phoenix-input__input" placeholder="请输入"></div></div>
+  </div>
+  <div class="form-item" data-test="gender">
+    <div class="form-item__title"><label class="form-item__text">性别</label></div>
+    <div class="form-item__control"><div class="phoenix-radio-group"><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">男</span></div><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">女</span></div></div></div>
+  </div>
+  <div class="form-item" data-test="politics">
+    <div class="form-item__title"><label class="form-item__text">政治面貌</label></div>
+    <div class="form-item__control"><div class="phoenix-select" data-options="中共党员|中共预备党员|共青团员|群众"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+  </div>
+  <div class="form-item" data-test="birth">
+    <div class="form-item__title"><label class="form-item__text">出生日期</label></div>
+    <div class="form-item__control"><div class="phoenix-select" data-date="1"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+  </div>
+  <div class="form-item" data-test="search-select">
+    <div class="form-item__title"><label class="form-item__text">招聘信息来源</label></div>
+    <div class="form-item__control"><div class="phoenix-select" data-search-options="学校就业网|招聘网站|朋友推荐"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div><input class="phoenix-select__input"></div></div>
+  </div>
+  <div class="form-item" data-test="native-select">
+    <div class="form-item__title"><label class="form-item__text">户口性质</label></div>
+    <div class="form-item__control"><select><option value="">请选择</option><option value="rural">农业户口</option><option value="urban">非农户口</option></select></div>
+  </div>
+  <div class="form-item" data-test="native-month">
+    <div class="form-item__title"><label class="form-item__text">毕业时间</label></div>
+    <div class="form-item__control"><input type="month"></div>
+  </div>
+  <div class="form-item" data-test="grad-school">
+    <div class="form-item__title"><label class="form-item__text">毕业学校</label></div>
+    <div class="form-item__control"><input></div>
+  </div>
+  <div class="form-item" data-test="education-school">
+    <div class="form-item__title"><label class="form-item__text">学校名称</label></div>
+    <div class="form-item__control"><div class="phoenix-auto-complete-container"><input placeholder="请输入"></div></div>
+  </div>
+  <div class="form-item" data-test="recommendation-a">
+    <div class="form-item__title"><label class="form-item__text">推荐码</label></div>
+    <div class="form-item__control"><input></div>
+  </div>
+  <div class="form-item" data-test="recommendation-b">
+    <div class="form-item__title"><label class="form-item__text">推荐码</label></div>
+    <div class="form-item__control"><input></div>
+  </div>
+  <div class="form-item" data-test="ai-school">
+    <div class="form-item__title"><label class="form-item__text">母校全称</label></div>
+    <div class="form-item__control"><input></div>
+  </div>
+  <div class="form-item" data-test="unsupported">
+    <div class="form-item__title"><label class="form-item__text">家庭关系说明</label></div>
+    <div class="form-item__control"><input></div>
+  </div>
+  <div class="form-item" data-test="intro">
+    <div class="form-item__title"><label class="form-item__text">自我介绍</label></div>
+    <div class="form-item__control"><div contenteditable="true"></div></div>
+  </div>
+  <section data-test="education-section">
+    <h2>教育经历</h2>
+    <div class="section-content">
+      <div class="form-item" data-test="education-discipline"><label class="form-item__text">学科</label><div class="phoenix-select" data-options="理学|工学|管理学"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+      <div class="form-item" data-test="unified-recruitment"><label class="form-item__text">是否统招</label><div class="phoenix-radio-group"><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">是</span></div><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">否</span></div></div></div>
+      <div class="form-item" data-test="overseas-education"><label class="form-item__text">是否为海外留学经历</label><div class="phoenix-radio-group"><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">是</span></div><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">否</span></div></div></div>
+    </div>
+  </section>
+  <section data-test="language-section">
+    <h2>语言能力</h2>
+    <div class="section-content">
+      <div class="form-item" data-test="language-type"><label class="form-item__text">语言类型</label><div class="phoenix-select" data-options="英语|日语|德语"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+      <div class="form-item" data-test="language-proficiency"><label class="form-item__text">掌握程度</label><div class="phoenix-select" data-options="一般|熟练|精通"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+    </div>
+  </section>
+  <section data-test="project-section">
+    <h2>项目经历</h2>
+    <div class="section-content">
+      <div class="form-item" data-test="project-name"><label class="form-item__text">项目经历名称</label><input placeholder="请输入"></div>
+      <div class="form-item" data-test="project-start"><label class="form-item__text">开始时间</label><div class="phoenix-select" data-month="1"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+      <div class="form-item" data-test="project-end"><label class="form-item__text">结束时间</label><div class="phoenix-select" data-month="1"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+      <div class="form-item" data-test="project-description"><label class="form-item__text">项目经历描述</label><textarea placeholder="请输入"></textarea></div>
+    </div>
+  </section>
+  <section data-test="internship-section">
+    <h2>实习经历</h2>
+    <div class="section-content">
+      <div class="form-item" data-test="internship-company"><label class="form-item__text">单位名称</label><input placeholder="请输入"></div>
+      <div class="form-item" data-test="internship-role"><label class="form-item__text">角色</label><input placeholder="请输入"></div>
+      <div class="form-item" data-test="internship-start"><label class="form-item__text">开始时间</label><div class="phoenix-select" data-month="1"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+      <div class="form-item" data-test="internship-end"><label class="form-item__text">结束时间</label><div class="phoenix-select" data-month="1"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+      <div class="form-item" data-test="internship-content"><label class="form-item__text">实习内容</label><textarea placeholder="请输入"></textarea></div>
+    </div>
+  </section>
+  <section data-test="award-section">
+    <h2>获奖情况</h2>
+    <div class="section-content">
+      <div class="form-item" data-test="award-name"><label class="form-item__text">奖项</label><input placeholder="请输入"></div>
+      <div class="form-item" data-test="award-date"><label class="form-item__text">获奖时间</label><div class="phoenix-select" data-month="1"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+      <div class="form-item" data-test="award-level"><label class="form-item__text">获奖级别</label><div class="phoenix-select" data-options="校级|省级|国家级"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+      <div class="form-item" data-test="award-description"><label class="form-item__text">获奖描述</label><textarea placeholder="请输入"></textarea></div>
+    </div>
+  </section>
+  <section data-test="research-section">
+    <h2>研究成果</h2>
+    <p>（如专利情况、发表论文等）</p>
+    <div class="section-content">
+      <div class="form-item" data-test="research-name"><label class="form-item__text">名称</label><input placeholder="请输入"></div>
+      <div class="form-item" data-test="research-date"><label class="form-item__text">时间</label><div class="phoenix-select" data-month="1"><div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div></div></div>
+      <div class="form-item" data-test="research-level"><label class="form-item__text">等级</label><input placeholder="请输入"></div>
+      <div class="form-item" data-test="research-description"><label class="form-item__text">描述</label><textarea placeholder="请输入"></textarea></div>
+    </div>
+  </section>
+  <section data-test="questions-section">
+    <h2>附加问题</h2>
+    <div class="section-content">
+      <div class="form-item" data-test="willing-allocation"><label class="form-item__text">是否愿意服从公司分配</label><div class="phoenix-radio-group"><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">是</span></div><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">否</span></div></div></div>
+      <div class="form-item" data-test="accept-relocation"><label class="form-item__text">是否接受外派</label><div class="phoenix-radio-group"><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">是</span></div><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">否</span></div></div></div>
+      <div class="form-item" data-test="accept-underdeveloped"><label class="form-item__text">是否可以接受海外欠发达地区分配</label><div class="phoenix-radio-group"><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">是</span></div><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">否</span></div></div></div>
+      <div class="form-item" data-test="has-relatives"><label class="form-item__text">是否有亲属在本公司工作</label><div class="phoenix-radio-group"><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">是</span></div><div class="phoenix-radio-group__radioItem"><span class="phoenix-radio">否</span></div></div></div>
+    </div>
+  </section>
+  <input data-test="job-search" placeholder="搜索职位关键词">
+  <div class="form-item" data-test="verification">
+    <div class="form-item__title"><label class="form-item__text">Verification Code</label></div>
+    <div class="form-item__control"><input name="verificationCode"></div>
+  </div>
+  <div class="form-item" data-test="card">
+    <div class="form-item__title"><label class="form-item__text">Credit Card Number</label></div>
+    <div class="form-item__control"><input name="cardNumber"></div>
+  </div>
+  <button id="submitButton" type="submit">预览并提交</button>
+  <script>
+    (() => {
+      window.__changeLog = [];
+      for (const eventName of ['input', 'change']) {
+        document.addEventListener(eventName, event => {
+          const holder = event.target.closest && event.target.closest('[data-test]');
+          window.__changeLog.push({ event: eventName, field: holder && holder.dataset.test || '', value: event.target.value || event.target.textContent || '' });
+        }, true);
+      }
+      const removeLayer = () => document.querySelectorAll('.common-unmodeled-layer').forEach(el => el.remove());
+      document.querySelectorAll('.phoenix-radio-group__radioItem').forEach(item => item.addEventListener('click', () => {
+        item.parentElement.querySelectorAll('.phoenix-radio').forEach(x => x.classList.remove('phoenix-radio--checked'));
+        item.querySelector('.phoenix-radio').classList.add('phoenix-radio--checked');
+      }));
+      document.querySelectorAll('.phoenix-select').forEach(select => select.addEventListener('click', () => {
+        removeLayer();
+        const layer = document.createElement('div');
+        layer.className = 'common-unmodeled-layer';
+        if (select.dataset.date) {
+          document.body.dataset.calendarOpened = 'yes';
+          const input = document.createElement('input');
+          input.className = 'phoenix-calendar-input';
+          input.addEventListener('keyup', event => {
+            document.body.dataset.calendarKey = event.key || 'missing';
+            if (event.key !== 'Enter') return;
+            select.innerHTML = '<div class="phoenix-select__singleValue"></div>';
+            select.firstElementChild.textContent = input.value;
+            removeLayer();
+          });
+          layer.appendChild(input);
+        } else if (select.dataset.month) {
+          const calendar = document.createElement('div');
+          calendar.className = 'phoenix-calendar-month-calendar';
+          let year = 2026;
+          const yearText = document.createElement('span');
+          yearText.className = 'phoenix-calendar-month-panel-year-select-content';
+          const renderYear = () => { yearText.textContent = String(year); };
+          const prev = document.createElement('button');
+          prev.className = 'phoenix-calendar-month-panel-prev-year-btn';
+          prev.addEventListener('click', event => { event.stopPropagation(); year--; renderYear(); });
+          const next = document.createElement('button');
+          next.className = 'phoenix-calendar-month-panel-next-year-btn';
+          next.addEventListener('click', event => { event.stopPropagation(); year++; renderYear(); });
+          calendar.append(prev, yearText, next);
+          for (let month = 1; month <= 12; month++) {
+            const cell = document.createElement('div');
+            cell.className = 'phoenix-calendar-month-panel-cell';
+            cell.textContent = month + '月';
+            cell.addEventListener('click', event => {
+              event.stopPropagation();
+              select.innerHTML = '<div class="phoenix-select__singleValue"></div>';
+              select.firstElementChild.textContent = year + '-' + String(month).padStart(2, '0');
+              removeLayer();
+            });
+            calendar.appendChild(cell);
+          }
+          renderYear();
+          layer.appendChild(calendar);
+        } else if (select.dataset.searchOptions) {
+          const render = value => {
+            layer.innerHTML = '';
+            for (const text of select.dataset.searchOptions.split('|').filter(text => !value || text.includes(value))) {
+              const option = document.createElement('div');
+              option.className = 'phoenix-selectList__listItem';
+              option.textContent = text;
+              option.addEventListener('click', event => {
+                event.stopPropagation();
+                select.innerHTML = '<div class="phoenix-select__singleValue"></div>';
+                select.firstElementChild.textContent = text;
+                removeLayer();
+              });
+              layer.appendChild(option);
+            }
+          };
+          const search = select.querySelector('input');
+          search.addEventListener('input', event => render(event.target.value), { once: true });
+        } else {
+          for (const text of select.dataset.options.split('|')) {
+            const option = document.createElement('div');
+            option.className = 'phoenix-selectList__listItem';
+            option.textContent = text;
+            option.addEventListener('click', event => {
+              event.stopPropagation();
+              select.innerHTML = '<div class="phoenix-select__singleValue"></div>';
+              select.firstElementChild.textContent = text;
+              removeLayer();
+            });
+            layer.appendChild(option);
+          }
+        }
+        document.body.appendChild(layer);
+      }));
+
+      document.querySelector('[data-test="education-school"] input').addEventListener('input', event => {
+        removeLayer();
+        if (!event.target.value) return;
+        const layer = document.createElement('div');
+        layer.className = 'common-unmodeled-layer';
+        const option = document.createElement('div');
+        option.className = 'phoenix-selectList__listItem';
+        option.textContent = '测试大学';
+        option.addEventListener('click', () => { event.target.value = option.textContent; removeLayer(); });
+        layer.appendChild(option);
+        document.body.appendChild(layer);
+      });
+
+      window.chrome = {
+        storage: {
+          local: {
+            get: async () => ({ profile: {
+              name:'测试用户', gender:'女', politicalStatus:'共青团员', birthDate:'2001-02-03',
+              school:'测试大学', recommendationCode:'ABC123', intro:'熟悉嵌入式开发', recruitmentSource:'学校就业网',
+              householdType:'非农业户口', graduationDate:'2026-06',
+              projectName:'复杂表单适配', projectStartDate:'2024-03', projectEndDate:'2024-08', projectDescription:'实现多框架表单识别与安全填充',
+              internshipCompany:'测试科技', internshipRole:'开发实习生', internshipStartDate:'2024-07', internshipEndDate:'2024-09', internshipContent:'负责自动化测试与组件适配',
+              educationDiscipline:'工学', unifiedRecruitment:'是', overseasEducation:'否', languageType:'英语', languageProficiency:'熟练',
+              awardName:'国家奖学金', awardDate:'2025-06', awardLevel:'国家级', awardDescription:'学习成绩与科研表现突出',
+              researchName:'智能填充方法', researchDate:'2025-08', researchLevel:'发明专利', researchDescription:'面向复杂招聘表单的字段识别方法',
+              willingAllocation:'是', acceptRelocation:'否', acceptUnderdevelopedOverseas:'否', hasRelativesAtCompany:'否',
+              customs:[{label:'请输入',value:'污染值'},{label:'Verification Code',value:'123456'},{label:'Credit Card Number',value:'4111111111111111'}]
+            }, settings:{}, learned:{'请输入':{label:'请输入',value:'历史污染值'}}, siteRules:{} }),
+            set: async () => undefined
+          },
+          onChanged: { addListener: () => undefined }
+        },
+        runtime: {
+          onMessage: { addListener: fn => { window.__fillListener = fn; } },
+          sendMessage: async message => {
+            if (message.type !== 'AI_MATCH_FIELDS') return { ok:false };
+            document.body.dataset.aiHasGeneric = String(message.payload.fields.some(item => item.label === '请输入'));
+            const target = message.payload.controls.find(item => item.label.includes('母校全称'));
+            return { ok:true, mappings: target ? [{ controlId:target.id, fieldKey:'school', confidence:0.98 }] : [] };
+          }
+        }
+      };
+    })();
+  </script>
+  <script src="../content/content.js?v=11001"></script>
+  <script>
+    window.__HARNESS_DONE = new Promise(resolve => {
+      let submitClicks = 0;
+      document.getElementById('submitButton').addEventListener('click', event => { event.preventDefault(); submitClicks++; });
+      window.__fillListener({ type:'FILL_FORM', overwrite:false, useAI:true }, null, result => {
+        const values = {
+          name: document.querySelector('[data-test="name"] input').value,
+          gender: document.querySelector('[data-test="gender"] .phoenix-radio--checked')?.textContent || '',
+          politics: document.querySelector('[data-test="politics"] .phoenix-select__singleValue')?.textContent || '',
+          birth: document.querySelector('[data-test="birth"] .phoenix-select__singleValue')?.textContent || '',
+          searchSelect: document.querySelector('[data-test="search-select"] .phoenix-select__singleValue')?.textContent || '',
+          nativeSelect: document.querySelector('[data-test="native-select"] select').value,
+          nativeMonth: document.querySelector('[data-test="native-month"] input').value,
+          gradSchool: document.querySelector('[data-test="grad-school"] input').value,
+          educationSchool: document.querySelector('[data-test="education-school"] input').value,
+          recommendationA: document.querySelector('[data-test="recommendation-a"] input').value,
+          recommendationB: document.querySelector('[data-test="recommendation-b"] input').value,
+          aiSchool: document.querySelector('[data-test="ai-school"] input').value,
+          intro: document.querySelector('[data-test="intro"] [contenteditable="true"]').textContent,
+          projectName: document.querySelector('[data-test="project-name"] input').value,
+          projectStart: document.querySelector('[data-test="project-start"] .phoenix-select__singleValue')?.textContent || '',
+          projectEnd: document.querySelector('[data-test="project-end"] .phoenix-select__singleValue')?.textContent || '',
+          projectDescription: document.querySelector('[data-test="project-description"] textarea').value,
+          internshipCompany: document.querySelector('[data-test="internship-company"] input').value,
+          internshipRole: document.querySelector('[data-test="internship-role"] input').value,
+          internshipStart: document.querySelector('[data-test="internship-start"] .phoenix-select__singleValue')?.textContent || '',
+          internshipEnd: document.querySelector('[data-test="internship-end"] .phoenix-select__singleValue')?.textContent || '',
+          internshipContent: document.querySelector('[data-test="internship-content"] textarea').value,
+          educationDiscipline: document.querySelector('[data-test="education-discipline"] .phoenix-select__singleValue')?.textContent || '',
+          unifiedRecruitment: document.querySelector('[data-test="unified-recruitment"] .phoenix-radio--checked')?.textContent || '',
+          overseasEducation: document.querySelector('[data-test="overseas-education"] .phoenix-radio--checked')?.textContent || '',
+          languageType: document.querySelector('[data-test="language-type"] .phoenix-select__singleValue')?.textContent || '',
+          languageProficiency: document.querySelector('[data-test="language-proficiency"] .phoenix-select__singleValue')?.textContent || '',
+          awardName: document.querySelector('[data-test="award-name"] input').value,
+          awardDate: document.querySelector('[data-test="award-date"] .phoenix-select__singleValue')?.textContent || '',
+          awardLevel: document.querySelector('[data-test="award-level"] .phoenix-select__singleValue')?.textContent || '',
+          awardDescription: document.querySelector('[data-test="award-description"] textarea').value,
+          researchName: document.querySelector('[data-test="research-name"] input').value,
+          researchDate: document.querySelector('[data-test="research-date"] .phoenix-select__singleValue')?.textContent || '',
+          researchLevel: document.querySelector('[data-test="research-level"] input').value,
+          researchDescription: document.querySelector('[data-test="research-description"] textarea').value,
+          willingAllocation: document.querySelector('[data-test="willing-allocation"] .phoenix-radio--checked')?.textContent || '',
+          acceptRelocation: document.querySelector('[data-test="accept-relocation"] .phoenix-radio--checked')?.textContent || '',
+          acceptUnderdeveloped: document.querySelector('[data-test="accept-underdeveloped"] .phoenix-radio--checked')?.textContent || '',
+          hasRelatives: document.querySelector('[data-test="has-relatives"] .phoenix-radio--checked')?.textContent || '',
+          jobSearch: document.querySelector('[data-test="job-search"]').value,
+          aiHasGeneric: document.body.dataset.aiHasGeneric,
+          verification: document.querySelector('[data-test="verification"] input').value,
+          card: document.querySelector('[data-test="card"] input').value,
+          submitClicks
+        };
+        window.__HARNESS_RESULT = { result, values, changeLog: window.__changeLog };
+        document.body.dataset.harnessResult = JSON.stringify(window.__HARNESS_RESULT);
+        document.body.dataset.harnessPass = String(
+          values.gender === '女' && values.politics === '共青团员' && values.birth === '2001-02-03' &&
+          values.searchSelect === '学校就业网' && values.nativeSelect === 'urban' && values.nativeMonth === '2026-06' &&
+          values.projectName === '复杂表单适配' && values.projectStart === '2024-03' && values.projectEnd === '2024-08' &&
+          values.projectDescription === '实现多框架表单识别与安全填充' && values.internshipCompany === '测试科技' &&
+          values.internshipRole === '开发实习生' && values.internshipStart === '2024-07' && values.internshipEnd === '2024-09' &&
+          values.internshipContent === '负责自动化测试与组件适配' && values.jobSearch === '' && values.aiHasGeneric === 'false' &&
+          values.aiSchool === '测试大学' &&
+          values.educationDiscipline === '工学' && values.unifiedRecruitment === '是' && values.overseasEducation === '否' &&
+          values.languageType === '英语' && values.languageProficiency === '熟练' && values.awardName === '国家奖学金' &&
+          values.awardDate === '2025-06' && values.awardLevel === '国家级' && values.awardDescription === '学习成绩与科研表现突出' &&
+          values.researchName === '智能填充方法' && values.researchDate === '2025-08' && values.researchLevel === '发明专利' &&
+          values.researchDescription === '面向复杂招聘表单的字段识别方法' && values.willingAllocation === '是' &&
+          values.acceptRelocation === '否' && values.acceptUnderdeveloped === '否' && values.hasRelatives === '否' &&
+          values.verification === '' && values.card === '' && values.submitClicks === 0
+        );
+        const status = document.createElement('output');
+        status.textContent = '控件回归通过：' + document.body.dataset.harnessPass + '；' + JSON.stringify(values);
+        document.body.prepend(status);
+        resolve(window.__HARNESS_RESULT);
+      });
+    });
+  </script>
+</body>
+</html>

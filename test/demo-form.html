@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>网申表单测试页 - 秋招自动填充助手</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #FBFAF7; color: #243041; margin: 0; padding: 32px 16px 64px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .tip {
+    background: #EAF3FB; border: 1px solid #CBE0F5; border-radius: 8px;
+    padding: 10px 14px; font-size: 13px; line-height: 1.7; margin-bottom: 28px;
+  }
+  h2 {
+    font-size: 15px; margin: 28px 0 12px; padding-left: 10px;
+    border-left: 3px solid #0E9F8A;
+  }
+  .form .item { display: flex; align-items: center; margin-bottom: 10px; }
+  .form .item label { width: 110px; text-align: right; margin-right: 12px; color: #435266; flex: none; }
+  .form .item input, .form .item select, .form .item textarea, .inline-form input, .inline-form select {
+    padding: 7px 10px; border: 1px solid #D8E0E6; border-radius: 6px;
+    font-size: 14px; font-family: inherit; width: 280px; background: #fff;
+  }
+  .inline-form label { margin: 0 4px 10px 0; }
+  textarea { width: 480px; height: 72px; resize: vertical; }
+  table { border-collapse: collapse; background: #fff; }
+  td { border: 1px solid #E4E9EC; padding: 8px 12px; font-size: 14px; }
+  td:first-child { color: #435266; background: #F7F9FA; width: 120px; }
+  td input, td select { padding: 6px 8px; border: 1px solid #D8E0E6; border-radius: 6px; font-size: 14px; width: 200px; }
+  .radio-group { display: flex; align-items: center; gap: 6px; }
+  .radio-group label { display: flex; align-items: center; gap: 4px; margin-right: 14px; }
+  .should { color: #0A6E5C; font-size: 12px; }
+  .should-not { color: #B42323; font-size: 12px; }
+  .note { font-size: 12px; color: #8A98A8; margin-top: 4px; }
+  .form-item { display: flex; align-items: center; margin-bottom: 10px; }
+  .form-item__title { width: 110px; text-align: right; margin-right: 12px; color: #435266; flex: none; }
+  .phoenix-input, .phoenix-select, .phoenix-radio-group { width: 280px; min-height: 34px; }
+  .phoenix-input__input, .phoenix-select { padding: 7px 10px; border: 1px solid #D8E0E6; border-radius: 6px; background: #fff; }
+  .phoenix-input__input { width: 100%; font-size: 14px; }
+  .phoenix-select { cursor: pointer; }
+  .phoenix-radio-group { display: flex; align-items: center; gap: 16px; }
+  .phoenix-radio-group__radioItem { cursor: pointer; padding: 5px 8px; border-radius: 5px; }
+  .phoenix-radio-group__radioItem--checked { background: #DDF5EF; color: #087765; }
+  .common-unmodeled-layer { position: fixed; left: 50%; top: 20%; z-index: 1000; background: #fff; border: 1px solid #CCD7DE; border-radius: 8px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  .phoenix-selectList__list { list-style: none; margin: 0; padding: 0; min-width: 220px; }
+  .phoenix-selectList__listItem { padding: 7px 10px; cursor: pointer; }
+  .phoenix-selectList__listItem:hover { background: #EEF7F5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>某某公司 2026 秋季校园招聘 · 网申测试页</h1>
+  <div class="tip">
+    用于验证「秋招网申自动填充助手」：<br>
+    1. 在插件弹窗中填好资料；2. 点击插件「填充当前页面」，或按 <b>Alt+F</b>，或在页面右键选「填充网申表单」。<br>
+    <span class="should">绿色标注 = 应被自动填充</span>；<span class="should-not">红色标注 = 不应被填充（干扰项）</span>。
+  </div>
+
+  <h2>一、标准布局（label 与输入框平级）</h2>
+  <div class="form">
+    <div class="item"><label>姓名：</label><input type="text" name="realName"> <span class="should">应填</span></div>
+    <div class="item"><label>手机号码：</label><input type="text" name="mobile" maxlength="11"> <span class="should">应填</span></div>
+    <div class="item"><label>电子邮箱：</label><input type="text" name="emailAddr"> <span class="should">应填</span></div>
+    <div class="item"><label>毕业院校：</label><input type="text" name="gradSchool"> <span class="should">应填</span></div>
+    <div class="item"><label>所学专业：</label><input type="text" name="majorName"> <span class="should">应填</span></div>
+    <div class="item"><label>出生日期：</label><input type="text" name="birth" placeholder="格式 1999-06-15"> <span class="should">应填</span></div>
+  </div>
+
+  <h2>二、label 包裹写法</h2>
+  <div class="form">
+    <label class="item"><label>微信号</label><input type="text" name="wechat"> <span class="should">应填</span></label>
+  </div>
+  <div class="inline-form" style="margin-bottom:10px">
+    <label>期望职位 <input type="text" name="intentPosition"></label> <span class="should">应填</span>
+    <label style="margin-left:20px">GPA <input type="text" name="gpaVal"></label> <span class="should">应填</span>
+  </div>
+
+  <h2>三、表格布局（老式网申系统常见）</h2>
+  <table>
+    <tr>
+      <td>毕业院校</td><td><input type="text" name="tblSchool"></td>
+      <td>专业名称</td><td><input type="text" name="tblMajor"></td>
+    </tr>
+    <tr>
+      <td>毕业时间</td><td><input type="text" name="tblGrad" placeholder="2026-06"></td>
+      <td>身份证号</td><td><input type="text" name="tblId"></td>
+    </tr>
+    <tr>
+      <td>专业排名</td><td><input type="text" name="tblRank"></td>
+      <td>自我评价</td><td><textarea name="tblIntro" style="width:200px;height:56px"></textarea></td>
+    </tr>
+  </table>
+  <p class="note">表格布局字段 <span class="should">应填</span></p>
+
+  <h2>四、下拉与单选</h2>
+  <div class="form">
+    <div class="item"><label>性别：</label>
+      <span class="radio-group">
+        <label><input type="radio" name="gender" value="男"> 男</label>
+        <label><input type="radio" name="gender" value="女"> 女</label>
+      </span> <span class="should">应选中</span>
+    </div>
+    <div class="item"><label>最高学历：</label>
+      <select name="eduLevel">
+        <option value="">请选择</option>
+        <option>专科</option>
+        <option>本科</option>
+        <option>硕士研究生</option>
+        <option>博士研究生</option>
+      </select> <span class="should">「硕士」应匹配到「硕士研究生」</span>
+    </div>
+    <div class="item"><label>政治面貌：</label>
+      <select name="politics">
+        <option value="">请选择</option>
+        <option>中共党员</option>
+        <option>中共预备党员</option>
+        <option>共青团员</option>
+        <option>民主党派</option>
+        <option>群众</option>
+      </select> <span class="should">应填</span>
+    </div>
+    <div class="item"><label>期望薪资：</label>
+      <select name="salary">
+        <option value="">请选择</option>
+        <option>10万以下/年</option>
+        <option>10-20万/年</option>
+        <option>20-30万/年</option>
+        <option>30万以上/年</option>
+      </select> <span class="should">直填文本可能无法匹配区间，属正常提示</span>
+    </div>
+  </div>
+
+  <h2>五、省市级联（期望工作地点写「广东 深圳」）</h2>
+  <div class="form">
+    <div class="item"><label>工作地点（省）：</label>
+      <select name="workProv">
+        <option value="">请选择</option>
+        <option>广东省</option>
+        <option>浙江省</option>
+        <option>北京市</option>
+      </select>
+    </div>
+    <div class="item"><label>工作地点（市）：</label>
+      <select name="workCity">
+        <option value="">请选择</option>
+        <option>深圳市</option>
+        <option>杭州市</option>
+        <option>北京市</option>
+      </select> <span class="should">两个下拉应分别选中 广东 / 深圳</span>
+    </div>
+  </div>
+
+  <h2>六、自定义字段目标</h2>
+  <div class="form">
+    <div class="item"><label>英语等级：</label><input type="text" name="cet"> <span class="should">自定义字段「英语等级」应填</span></div>
+    <div class="item"><label>求职状态：</label>
+      <select name="jobStatus">
+        <option value="">请选择</option>
+        <option>2026届应届生</option>
+        <option>2025届待业</option>
+        <option>在职</option>
+      </select> <span class="should">自定义字段「求职状态」内容为「2026届应届生」时应选中</span>
+    </div>
+  </div>
+
+  <h2>七、干扰项（插件不应填充）</h2>
+  <div class="form">
+    <div class="item"><label>紧急联系人：</label><input type="text" name="emgName"> <span class="should-not">不应填</span></div>
+    <div class="item"><label>紧急联系人电话：</label><input type="text" name="emgPhone"> <span class="should-not">不应填（排除规则）</span></div>
+    <div class="item"><label>现居住地：</label><input type="text" name="liveCity"> <span class="should-not">不应填（排除规则）</span></div>
+    <div class="item"><label>设置密码：</label><input type="password" name="pwd"> <span class="should-not">不应填（密码类一律跳过）</span></div>
+    <div class="item"><label>上传证件照：</label><input type="file" name="photo"> <span class="should-not">不应填（文件类跳过）</span></div>
+  </div>
+
+  <h2>八、企业招聘系统自定义控件（v1.3 回归测试）</h2>
+  <div id="customFrameworkFixture">
+    <div class="form-item">
+      <div class="form-item__title"><label class="form-item__text">姓名</label></div>
+      <div class="form-item__control"><div class="phoenix-input"><input class="phoenix-input__input" placeholder="请输入"></div></div>
+      <span class="should">标题与输入框分离，仍应填入</span>
+    </div>
+    <div class="form-item">
+      <div class="form-item__title"><label class="form-item__text">性别</label></div>
+      <div class="form-item__control">
+        <div class="phoenix-radio-group">
+          <div class="phoenix-radio-group__radioItem">男</div>
+          <div class="phoenix-radio-group__radioItem">女</div>
+        </div>
+      </div>
+      <span class="should">手动触发时应选中</span>
+    </div>
+    <div class="form-item">
+      <div class="form-item__title"><label class="form-item__text">政治面貌</label></div>
+      <div class="form-item__control">
+        <div class="phoenix-select" data-options="中共党员|中共预备党员|共青团员|群众">
+          <div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div>
+        </div>
+      </div>
+      <span class="should">手动触发时应选择匹配项</span>
+    </div>
+    <div class="form-item">
+      <div class="form-item__title"><label class="form-item__text">出生日期</label></div>
+      <div class="form-item__control">
+        <div class="phoenix-select" data-date="1">
+          <div class="phoenix-select__placeHolder phoenix-select__placeHolder--show">请选择</div>
+        </div>
+      </div>
+      <span class="should">手动触发时应写入日期</span>
+    </div>
+  </div>
+</div>
+<script>
+  (() => {
+    const removeLayer = () => document.querySelectorAll('.common-unmodeled-layer').forEach(el => el.remove());
+
+    document.querySelectorAll('.phoenix-radio-group__radioItem').forEach(item => {
+      item.addEventListener('click', () => {
+        item.parentElement.querySelectorAll('.phoenix-radio-group__radioItem').forEach(x => x.classList.remove('phoenix-radio-group__radioItem--checked'));
+        item.classList.add('phoenix-radio-group__radioItem--checked');
+      });
+    });
+
+    document.querySelectorAll('.phoenix-select').forEach(select => {
+      select.addEventListener('click', () => {
+        removeLayer();
+        const layer = document.createElement('div');
+        layer.className = 'common-unmodeled-layer';
+        if (select.dataset.date) {
+          const input = document.createElement('input');
+          input.className = 'phoenix-calendar-input';
+          input.placeholder = '请输入';
+          input.addEventListener('keyup', event => {
+            if (event.key !== 'Enter') return;
+            select.innerHTML = '<div class="phoenix-select__singleValue"></div>';
+            select.firstElementChild.textContent = input.value;
+            removeLayer();
+          });
+          layer.appendChild(input);
+        } else {
+          const list = document.createElement('ul');
+          list.className = 'phoenix-selectList__list';
+          for (const text of (select.dataset.options || '').split('|')) {
+            const option = document.createElement('li');
+            option.className = 'phoenix-selectList__listItem';
+            option.textContent = text;
+            option.addEventListener('click', event => {
+              event.stopPropagation();
+              select.innerHTML = '<div class="phoenix-select__singleValue"></div>';
+              select.firstElementChild.textContent = text;
+              removeLayer();
+            });
+            list.appendChild(option);
+          }
+          layer.appendChild(list);
+        }
+        document.body.appendChild(layer);
+      });
+    });
+  })();
+</script>
+</body>
+</html>

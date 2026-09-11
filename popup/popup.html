@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>秋招网申自动填充助手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">申</span>
+      <div class="brand-text">
+        <h1>秋招自动填充</h1>
+        <p>建好一份资料，反复填写网申</p>
+      </div>
+    </div>
+    <label class="switch" title="打开网申页面后，自动识别并填充空白字段">
+      <input type="checkbox" id="autoFill" aria-label="自动填写空白字段">
+      <span class="slider"></span>
+    </label>
+  </header>
+
+  <div class="manager-note" hidden>在此管理资料；填写时返回招聘网页，点击浏览器工具栏中的插件。</div>
+  <div class="actions">
+    <button id="selfCheckBtn" class="primary" type="button">填写并自检</button>
+    <button id="fillBtn" type="button">快速填充</button>
+    <button id="lastCheckBtn" type="button">查看自检</button>
+    <button id="runLogsBtn" type="button">运行日志</button>
+    <button id="stopFillBtn" type="button" hidden>停止填写</button>
+    <span id="fillProgress" role="status" aria-live="polite"></span>
+    <label class="check" title="勾选后会覆盖你已经手动填写的内容">
+      <input type="checkbox" id="overwrite"> 本次覆盖非空字段
+    </label>
+  </div>
+  <div id="fillResult" class="result" hidden></div>
+  <div id="selfCheckResult" class="result" hidden></div>
+  <div id="runLogsResult" class="result" hidden></div>
+
+  <nav id="tabs">
+    <button class="tab active" data-tab="resume">我的简历</button>
+    <button class="tab" data-tab="basic">基本信息</button>
+    <button class="tab" data-tab="edu">教育背景</button>
+    <button class="tab" data-tab="intent">求职意向</button>
+    <button class="tab" data-tab="experience">项目实习</button>
+    <button class="tab" data-tab="achievement">语言成果</button>
+    <button class="tab" data-tab="more">校招补充</button>
+    <button class="tab" data-tab="custom">自定义</button>
+    <button class="tab" data-tab="ai">AI</button>
+  </nav>
+
+  <main id="main">
+    <section class="panel active" id="tab-resume">
+      <div class="resume-intro"><span class="eyebrow">我的简历</span><h2 id="profileHeading">先建立你的资料</h2><p id="profileSummary"></p></div>
+      <div class="resume-buttons"><button id="editProfileBtn" class="primary">填写 / 修改资料</button><button id="openManagerBtn">在大窗口管理</button></div>
+      <ol class="journey"><li><b>建立资料</b><span>手动填写，或从文件提取后核对。</span></li><li><b>填写网申</b><span>默认保留网页已有输入，填写后自动核验。</span></li><li><b>确认与保存</b><span>处理待核对项，在网站自行保存或提交；附件简历需单独上传。</span></li></ol>
+      <div class="divider">从文件更新资料</div>
+      <input type="file" id="sourceFile" accept=".docx,.xlsx,.xls,.csv,.json,.txt,.md,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+      <button id="sourceFileBtn" class="ghost">选择简历文件</button>
+      <p>支持 Word（.docx）、Excel 和文本，最大 20MB；暂不支持 PDF。选择文件只在本地读取。点击 AI 提取后才会发送文本给所选模型，结果先进入差异预览。提取前需配置模型并启用 AI。</p>
+      <p id="sourceStatus" class="ai-status" data-state="info">尚未导入原始资料。</p>
+      <div class="ai-actions">
+        <button id="extractSourceAi" class="primary ai-connect" disabled>AI 提取并预览</button>
+        <button id="clearSource" class="ghost danger-ghost" disabled>移除原始文件</button>
+      </div>
+
+      <button id="configureAiBtn" class="link">配置并启用 AI</button>
+      <p id="workflowStatus" role="status" aria-live="polite"></p>
+      <div id="updateReview" hidden>
+        <h3 id="updateTitle">核对资料变化</h3><p id="updateHint"></p>
+        <div class="review-actions"><button id="applyUpdateBtn" class="primary">应用勾选的变化</button><button id="cancelUpdateBtn">放弃本次更新</button></div>
+        <div id="updateRows"></div>
+      </div>
+      <details class="resume-tools"><summary>备份与恢复</summary>
+        <p>升级、重新安装或换电脑前先导出备份。备份包含个人资料，请妥善保管；不含 API 密钥和原始文件。</p>
+        <div class="resume-buttons"><button id="exportBtn">导出资料备份</button><button id="importBtn">从备份恢复资料</button><button id="recoverProfileBtn">查看上次更新前的资料</button></div>
+        <p>恢复先核对资料差异；当前 AI 设置、学习记录和站点规则保持原状。</p>
+      </details>
+      <details class="resume-tools"><summary>演示与清理</summary><p>演示资料只用于测试。载入前可核对变化，已有资料默认不选中替换。</p><button id="demoBtn">预览演示资料</button><button id="clearBtn" class="link danger">清空本地数据</button></details>
+    </section>
+
+    <section class="panel" id="tab-basic"></section>
+    <section class="panel" id="tab-edu"></section>
+    <section class="panel" id="tab-intent"></section>
+    <section class="panel" id="tab-experience"></section>
+    <section class="panel" id="tab-achievement"></section>
+    <section class="panel" id="tab-more"></section>
+    <section class="panel" id="tab-custom">
+      <div class="divider">自定义字段</div>
+      <div id="customList"></div>
+      <button id="addCustom" class="ghost">＋ 添加自定义字段</button>
+      <p class="hint">自定义字段按「字段名」与网页标签的包含关系匹配，适合放求职状态、证件类型等网申常见问题。</p>
+
+      <div class="divider">学习记录</div>
+      <div id="learnedList"></div>
+      <p class="hint" id="learnedHint">你在网页上手动填写过的字段会被记住，下次同类标签自动填（跨网站生效）。可在下方删除个别记录。</p>
+      <button id="clearLearned" class="ghost danger-ghost">清空全部学习记录</button>
+
+      <div class="divider">站点规则（当前网站）</div>
+      <p class="hint" id="siteHost">检测中…</p>
+      <div id="ruleList"></div>
+      <button id="addRule" class="ghost">＋ 添加规则</button>
+      <p class="hint">规则只对当前域名的网站生效，优先于通用识别。「匹配词」填该网站表单的标签文字或输入框 name 属性，遇到顽固识别不了的网站时使用。</p>
+    </section>
+    <section class="panel" id="tab-ai">
+      <div class="divider">AI 厂商与模型</div>
+      <label class="ai-row">
+        <span>模型厂商</span>
+        <select id="aiProvider"></select>
+      </label>
+      <label class="ai-row">
+        <span>API 密钥</span>
+        <input type="password" id="aiApiKey" autocomplete="off" placeholder="粘贴厂商 API 密钥">
+      </label>
+      <button id="connectAi" class="primary ai-connect">连接并获取模型</button>
+      <p id="aiStatus" class="ai-status" data-state="info">选择厂商，粘贴密钥，然后获取模型。</p>
+      <label class="ai-row">
+        <span>可用模型</span>
+        <select id="aiModel" disabled>
+          <option value="">请先连接并获取模型</option>
+        </select>
+      </label>
+      <label class="ai-toggle">
+        <input type="checkbox" id="aiEnabled">
+        <span>启用 AI 识别剩余空白字段</span>
+      </label>
+      <div id="customAiFields" hidden>
+        <div class="divider">自定义接口</div>
+        <label class="ai-row">
+          <span>接口协议</span>
+          <select id="aiProtocol">
+            <option value="chat-completions">OpenAI 兼容 Chat Completions</option>
+            <option value="responses">OpenAI Responses</option>
+            <option value="anthropic">Anthropic Messages</option>
+          </select>
+        </label>
+        <label class="ai-row">
+          <span>调用接口</span>
+          <input type="url" id="aiEndpoint" placeholder="完整模型调用地址">
+        </label>
+        <label class="ai-row">
+          <span>模型列表接口</span>
+          <input type="url" id="aiModelsEndpoint" placeholder="完整模型列表地址">
+        </label>
+      </div>
+      <div class="ai-actions">
+        <button id="clearAiKey" class="ghost danger-ghost">清除密钥</button>
+      </div>
+      <p class="hint">严格匹配由本地规则完成。点击“AI 提取并预览”或启用 AI 补填后，导入文档的文本、资料字段值、页面字段名称和候选选项会发送给所选模型，用于提取资料和处理歧义。</p>
+    </section>
+  </main>
+
+  <footer>
+    <span><span id="saveStatus"></span><span class="version">v1.15.0-dev</span></span>
+    <button id="reviewConflictsBtn" class="link" hidden>核对并发修改</button>
+    <button id="saveNowBtn" class="link">立即保存</button>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+  </footer>
+
+  <script src="../shared/providers.js"></script>
+  <script src="../shared/feedback-loop.js"></script>
+  <script src="../shared/profile-updates.js"></script>
+  <script src="../vendor/xlsx.full.min.js"></script>
+  <script src="../vendor/mammoth.browser.min.js"></script>
+  <script src="popup.js"></script>
+  <script src="profile-workflow.js"></script>
+</body>
+</html>

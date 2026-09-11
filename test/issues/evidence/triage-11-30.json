@@ -1,0 +1,1026 @@
+{
+  "schema": 1,
+  "analyzedRuns": 1,
+  "incompleteRuns": 0,
+  "issues": [
+    {
+      "key": "campus.kuaishou.cn|educationEndDate|existing-unverified|inspection",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "educationEndDate",
+      "reason": "existing-unverified",
+      "category": "inspection",
+      "title": "已有内容待核对",
+      "nextStep": "先核对现有内容，不为获得通过状态覆盖用户输入。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 48,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "ant"
+            },
+            {
+              "stage": "task-start",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "value-transition",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "existing-unverified",
+              "widget": "ant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campus.kuaishou.cn|educationMajor|not-verified|adapter",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "educationMajor",
+      "reason": "not-verified",
+      "category": "adapter",
+      "title": "控件填写失败",
+      "nextStep": "按控件和失败阶段采集最小复现，保留未知原因，不凭日志猜根因。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 50,
+          "final": true,
+          "stages": [
+            {
+              "stage": "choice-search",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "choice-match-failed",
+              "reason": "ambiguous-options",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "blur-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "not-verified",
+              "widget": "ant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campus.kuaishou.cn|educationSchool|not-verified|adapter",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "educationSchool",
+      "reason": "not-verified",
+      "category": "adapter",
+      "title": "控件填写失败",
+      "nextStep": "按控件和失败阶段采集最小复现，保留未知原因，不凭日志猜根因。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 49,
+          "final": true,
+          "stages": [
+            {
+              "stage": "choice-search",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "choice-match-failed",
+              "reason": "no-visible-options",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "blur-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "not-verified",
+              "widget": "ant"
+            }
+          ]
+        },
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 55,
+          "final": true,
+          "stages": [
+            {
+              "stage": "choice-search",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "choice-match-failed",
+              "reason": "no-visible-options",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "blur-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "not-verified",
+              "widget": "ant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campus.kuaishou.cn|educationStartDate|not-verified|adapter",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "educationStartDate",
+      "reason": "not-verified",
+      "category": "adapter",
+      "title": "控件填写失败",
+      "nextStep": "按控件和失败阶段采集最小复现，保留未知原因，不凭日志猜根因。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 47,
+          "final": true,
+          "stages": [
+            {
+              "stage": "date-navigation",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "date-picked",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "value-transition",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "not-verified",
+              "widget": "ant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campus.kuaishou.cn|gender|existing-unverified|inspection",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "gender",
+      "reason": "existing-unverified",
+      "category": "inspection",
+      "title": "已有内容待核对",
+      "nextStep": "先核对现有内容，不为获得通过状态覆盖用户输入。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 39,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "other"
+            },
+            {
+              "stage": "task-start",
+              "reason": "unknown",
+              "widget": "other"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "other"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "other"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "other"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "other"
+            },
+            {
+              "stage": "final-check",
+              "reason": "existing-unverified",
+              "widget": "other"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campus.kuaishou.cn|internshipEndDate|existing-unverified|inspection",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "internshipEndDate",
+      "reason": "existing-unverified",
+      "category": "inspection",
+      "title": "已有内容待核对",
+      "nextStep": "先核对现有内容，不为获得通过状态覆盖用户输入。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 61,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "ant"
+            },
+            {
+              "stage": "task-start",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "value-transition",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "existing-unverified",
+              "widget": "ant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campus.kuaishou.cn|internshipStartDate|not-verified|adapter",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "internshipStartDate",
+      "reason": "not-verified",
+      "category": "adapter",
+      "title": "控件填写失败",
+      "nextStep": "按控件和失败阶段采集最小复现，保留未知原因，不凭日志猜根因。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 60,
+          "final": true,
+          "stages": [
+            {
+              "stage": "date-navigation",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "date-picked",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "value-transition",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "not-verified",
+              "widget": "ant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campus.kuaishou.cn|projectEndDate|existing-unverified|inspection",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "projectEndDate",
+      "reason": "existing-unverified",
+      "category": "inspection",
+      "title": "已有内容待核对",
+      "nextStep": "先核对现有内容，不为获得通过状态覆盖用户输入。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 63,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "ant"
+            },
+            {
+              "stage": "task-start",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "value-transition",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "existing-unverified",
+              "widget": "ant"
+            }
+          ]
+        },
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 65,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "ant"
+            },
+            {
+              "stage": "task-start",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "value-transition",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "existing-unverified",
+              "widget": "ant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campus.kuaishou.cn|projectStartDate|not-verified|adapter",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "projectStartDate",
+      "reason": "not-verified",
+      "category": "adapter",
+      "title": "控件填写失败",
+      "nextStep": "按控件和失败阶段采集最小复现，保留未知原因，不凭日志猜根因。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 62,
+          "final": true,
+          "stages": [
+            {
+              "stage": "date-navigation",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "date-picked",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "value-transition",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "not-verified",
+              "widget": "ant"
+            }
+          ]
+        },
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 64,
+          "final": true,
+          "stages": [
+            {
+              "stage": "date-navigation",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "date-picked",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "value-transition",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "not-verified",
+              "widget": "ant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campus.kuaishou.cn|recruitmentSource|not-verified|adapter",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "recruitmentSource",
+      "reason": "not-verified",
+      "category": "adapter",
+      "title": "控件填写失败",
+      "nextStep": "按控件和失败阶段采集最小复现，保留未知原因，不凭日志猜根因。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 41,
+          "final": true,
+          "stages": [
+            {
+              "stage": "choice-layer",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "choice-match-failed",
+              "reason": "no-matching-options",
+              "widget": "ant"
+            },
+            {
+              "stage": "write-result",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "blur-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "settlement-check",
+              "reason": "unknown",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "not-verified",
+              "widget": "ant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campus.kuaishou.cn|unmapped|existing-unverified|inspection",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "unmapped",
+      "reason": "existing-unverified",
+      "category": "inspection",
+      "title": "已有内容待核对",
+      "nextStep": "先核对现有内容，不为获得通过状态覆盖用户输入。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 36,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "existing-unverified",
+              "widget": "ant"
+            }
+          ]
+        },
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 38,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "ant"
+            },
+            {
+              "stage": "final-check",
+              "reason": "existing-unverified",
+              "widget": "ant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "campus.kuaishou.cn|unmapped|unmapped-or-empty|inspection",
+      "host": "campus.kuaishou.cn",
+      "fieldKey": "unmapped",
+      "reason": "unmapped-or-empty",
+      "category": "inspection",
+      "title": "需要进一步核对",
+      "nextStep": "定位字段，区分缺资料、未映射和未完成；必要时采集脱敏控件结构。",
+      "status": "observed",
+      "affectedRuns": 1,
+      "versions": [
+        "1.15.0-dev"
+      ],
+      "evidence": [
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 5,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "other"
+            },
+            {
+              "stage": "final-check",
+              "reason": "unmapped-or-empty",
+              "widget": "other"
+            }
+          ]
+        },
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 6,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "other"
+            },
+            {
+              "stage": "final-check",
+              "reason": "unmapped-or-empty",
+              "widget": "other"
+            }
+          ]
+        },
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 7,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "other"
+            },
+            {
+              "stage": "final-check",
+              "reason": "unmapped-or-empty",
+              "widget": "other"
+            }
+          ]
+        },
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 8,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "other"
+            },
+            {
+              "stage": "final-check",
+              "reason": "unmapped-or-empty",
+              "widget": "other"
+            }
+          ]
+        },
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 9,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "other"
+            },
+            {
+              "stage": "final-check",
+              "reason": "unmapped-or-empty",
+              "widget": "other"
+            }
+          ]
+        },
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 10,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "other"
+            },
+            {
+              "stage": "final-check",
+              "reason": "unmapped-or-empty",
+              "widget": "other"
+            }
+          ]
+        },
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 11,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "other"
+            },
+            {
+              "stage": "final-check",
+              "reason": "unmapped-or-empty",
+              "widget": "other"
+            }
+          ]
+        },
+        {
+          "runId": "4bb08f83-e794-4c71-8160-0e017d59d499",
+          "build": "1.15.0-dev",
+          "source": "final-field",
+          "control": 12,
+          "final": true,
+          "stages": [
+            {
+              "stage": "control-discovered",
+              "reason": "awaiting-mapping",
+              "widget": "other"
+            },
+            {
+              "stage": "final-check",
+              "reason": "unmapped-or-empty",
+              "widget": "other"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "同类问题分组不是唯一字段身份；需要复现确认根因。",
+    "未再次出现不代表已修复；关闭问题需新版本实页复验。",
+    "日志不包含资料值或完整 DOM，不能单独证明网站已保存。"
+  ]
+}

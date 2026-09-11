@@ -1,0 +1,22 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto');
+let store={},fail=false;
+const context={crypto,Date,chrome:{runtime:{getManifest:()=>({version:'test'})},storage:{local:{get:async()=>structuredClone(store),set:async value=>{if(fail){fail=false;throw Error('quota');}store=structuredClone(value);}}}}};
+vm.createContext(context);vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../shared/run-logs.js'),'utf8'),context);
+const api=context.QIUZHAO_RUN_LOGS;
+(async()=>{
+ const raw={host:'fixture.invalid',outcome:'finished',profile:{name:'PRIVATE_NAME'},apiKey:'SECRET_KEY',url:'https://fixture.invalid/?token=SECRET_KEY',items:[{ordinal:1,fieldKey:'name',status:'failed',reason:'value-reverted',value:'PRIVATE_NAME',label:'PRIVATE_NAME'}],counts:{verified:1,empty:2}};
+ await Promise.all(Array.from({length:35},()=>api.save(raw)));
+ assert.equal(store.runLogs.length,30);assert.equal(new Set(store.runLogs.map(r=>r.id)).size,30);
+ assert(!JSON.stringify(store).includes('SECRET_KEY'));assert(!JSON.stringify(store).includes('PRIVATE_NAME'));
+ assert.equal(store.runLogs[0].items[0].reason,'value-reverted');
+ const runId=crypto.randomUUID();
+ await api.save({...raw,runId,outcome:'running',events:[{seq:1,ms:20,stage:'ai-request',operation:'AI_MATCH_FIELDS',value:'PRIVATE_NAME',apiKey:'SECRET_KEY'}]});
+ await api.save({...raw,runId,outcome:'finished',events:[{seq:2,ms:40,stage:'settlement-check',sameAsWritten:false,value:'PRIVATE_NAME'}]});
+ assert.equal(store.runLogs.filter(r=>r.id===runId).length,1);assert.equal(store.runLogs[0].events[0].sameAsWritten,false);
+ assert(!JSON.stringify(store).includes('PRIVATE_NAME'));assert(!JSON.stringify(store).includes('SECRET_KEY'));
+ const capped=api.sanitize({events:Array.from({length:700},()=>({stage:'task-start'})),droppedEvents:100},'test');assert.equal(capped.events.length,600);assert.equal(capped.droppedEvents,100);
+ fail=true;await assert.rejects(api.save(raw));await api.save({...raw,outcome:'fill-cancelled'});
+ assert.equal(store.runLogs[0].outcome,'fill-cancelled');
+ const dirty=api.sanitize({host:'https://bad/?secret',items:[null],counts:{verified:-1}},'test');assert.equal(dirty.host,'unknown');assert.equal(dirty.counts.verified,0);
+ console.log('PASS logs: persisted, bounded 30, concurrent writes serialized, sensitive extras omitted, cancellation and storage failure recovery');
+})().catch(e=>{console.error(e);process.exitCode=1;});

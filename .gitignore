@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+test/hisense/reports/
+qiuzhao-autofill-backup-*.json

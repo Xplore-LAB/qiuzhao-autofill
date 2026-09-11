@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {JSDOM}=require(process.env.QIUZHAO_JSDOM||'jsdom');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../content/content.js'),'utf8');
+const dom=new JSDOM('<div class="list-item-container"><span class="icon-container"><svg></svg></span><span>汉族</span></div>',{runScripts:'outside-only'});
+const w=dom.window;let selected=0;
+const svg=w.document.querySelector('svg');
+svg.addEventListener('click',()=>selected++);
+assert.equal(typeof svg.click,'undefined');
+const clickCode=source.slice(source.indexOf('  function safeCustomClick('),source.indexOf('  function fireEnter('));
+const targetCode=source.slice(source.indexOf('  function optionClickTarget('),source.indexOf('  async function waitForChoiceOption('));
+w.eval('let programmaticFill=false,ignoreLearningUntil=0;function checkFillRun(){} function isVisible(){return true;}'+clickCode+targetCode+'\nwindow.runClick=()=>safeCustomClick(optionClickTarget(document.querySelector(".list-item-container")));');
+assert.equal(w.runClick(),true);assert.equal(selected,1);
+dom.window.close();console.log('SVG click passed: actual SVG without click method, inner handler reached once');

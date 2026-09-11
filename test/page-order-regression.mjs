@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const source=fs.readFileSync(new URL('../content/content.js',import.meta.url),'utf8');
+const make=(id,top,left=0)=>({id,top,left,isConnected:true,getBoundingClientRect(){return {top:this.top,left:this.left};},compareDocumentPosition:()=>4});
+const top=make('top',10),left=make('left',100,10),right=make('right',100,200),bottom=make('bottom',300);
+const log=[];let active=0;
+const context={controlHasValue:()=>false,activeFillRun:null,checkFillRun:()=>{},Node:{DOCUMENT_POSITION_FOLLOWING:4},isVisible:()=>true,applyControl:async(el,field,values,overwrite,summary)=>{
+  assert.equal(active++,0);log.push(el.id);await Promise.resolve();
+  if(el===top) bottom.top=50;
+  summary.filled.push(field.label);active--;
+}};
+vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('  function comparePagePosition('),source.indexOf('  async function applyControl('))+'\nthis.execute=executeFillPlan;',context);
+const summary={filled:[],failed:[],aiFilled:[]};
+await context.execute([right,bottom,left,top].map(el=>({el,field:{key:el.id,label:el.id},values:['demo'],ai:el===bottom})),true,summary,{});
+assert.deepEqual(log,['top','bottom','left','right']);
+assert.deepEqual(summary.aiFilled,['bottom']);
+top.isConnected=false;
+await context.execute([{el:top,field:{key:'top',label:'top'},values:['demo']}],true,summary,{});
+assert.equal(log.length,4);assert.equal(summary.diagnostics[0].reason,'control-replaced');
+assert.match(source,/finally\s*\{\s*await executeFillPlan\(plan/);
+console.log('page order passed: top to bottom, left to right, geometry refresh, serial verification, AI queue, stale node');
