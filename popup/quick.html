@@ -4,7 +4,29 @@
 <body>
   <header><h1>秋招自动填充</h1><button id="manage" class="text">管理资料 ↗</button></header>
   <section class="context"><span id="site">连接当前网页…</span><p id="profile">读取资料…</p><span id="mode" class="muted"></span></section>
-  <section class="controls"><button id="start" class="primary" disabled>填写并自检</button><button id="stop" class="secondary" hidden>安全停止</button></section>
+  <section class="page-tools">
+    <div class="tool-row"><button id="refresh-page" class="text">重新识别页面</button><button id="applications" class="text">投递记录 ↗</button></div>
+    <label id="frame-row" hidden>选择要填写的表单<select id="frame-select" aria-label="选择表单区域"></select></label>
+  </section>
+  <section class="controls"><button id="start" class="primary" disabled>识别并检查表单</button><button id="stop" class="secondary" hidden>安全停止</button></section>
+  <section id="preview" class="workflow-card" hidden aria-label="填写前检查">
+    <strong>填写前检查</strong><p id="preview-counts"></p><p id="preview-labels" class="muted"></p><div id="preview-repeats"></div>
+    <p class="muted">仅处理所选区域；保留已有内容。候选项将在填写时再次匹配并核验，未识别的字段仍需手动补充。</p>
+  </section>
+  <details id="job-card" class="workflow-card">
+    <summary>收藏当前岗位</summary>
+    <button id="capture-job" class="secondary">读取岗位信息</button>
+    <form id="job-form" hidden>
+      <label>岗位名称<input id="job-title" maxlength="300" required></label>
+      <label>公司<input id="job-company" maxlength="200"></label>
+      <label>地点<input id="job-location" maxlength="200"></label>
+      <label>截止日期<input id="job-deadline" type="date"></label>
+      <label>岗位链接<input id="job-url" type="url" required></label>
+      <label>岗位描述<textarea id="job-description" rows="3" maxlength="12000"></textarea></label>
+      <button id="save-job" class="primary" type="submit">确认收藏岗位</button>
+    </form>
+    <p id="job-message" role="status" class="muted">核对后保存在本机。填写结束不会自动标记为已投递。</p>
+  </details>
   <section id="progress" class="progress" hidden aria-label="填写进度">
     <div class="run-head">
       <span id="state-icon" class="state-icon" aria-hidden="true"></span>
@@ -32,5 +54,6 @@
   <footer><span>保留已有内容 · 不自动提交</span><button id="details" class="text">结果与日志 ↗</button></footer>
   <p id="version" class="muted"></p>
   <link rel="stylesheet" href="sidepanel.css">
+  <link rel="stylesheet" href="workflow.css">
   <script src="quick.js"></script>
 </body></html>

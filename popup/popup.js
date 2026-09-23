@@ -99,6 +99,31 @@ const FIELD_TABS = [
       { key: 'researchDate', label: '成果时间', ph: '2025-06' },
       { key: 'researchLevel', label: '成果等级', ph: '核心期刊、发明专利等' },
       { key: 'researchDescription', label: '成果描述', type: 'textarea', ph: '成果说明' },
+      {key: 'educationCollege', label: '学院', ph: ''},
+      {key: 'educationLab', label: '实验室', ph: ''},
+      {key: 'educationMentor', label: '导师姓名', ph: ''},
+      {key: 'languageSpeaking', label: '听说能力', ph: ''},
+      {key: 'languageWriting', label: '读写能力', ph: ''},
+      {key: 'internshipAchievement', label: '工作业绩', ph: ''},
+      {key: 'projectRole', label: '项目职务', ph: ''},
+      {key: 'projectResponsibility', label: '项目职责', ph: ''},
+      {key: 'researchChannel', label: '发布渠道', ph: ''},
+      {key: 'researchAuthorOrder', label: '作者顺序', ph: ''},
+      {key: 'researchUrl', label: '论文链接', ph: ''},
+      {key: 'skillName', label: '技能类别', ph: ''},
+      {key: 'skillLevel', label: '技能掌握程度', ph: ''},
+      {key: 'certificateName', label: '技能证书', ph: ''},
+      {key: 'competitionName', label: '竞赛名称', ph: ''},
+      {key: 'competitionLevel', label: '竞赛获奖等级', ph: ''},
+      {key: 'competitionDate', label: '竞赛获奖时间', ph: ''},
+      {key: 'honorName', label: '荣誉名称', ph: ''},
+      {key: 'workName', label: '作品名称', ph: ''},
+      {key: 'workUrl', label: '作品链接', ph: ''},
+      {key: 'skillsBulk', label: '批量IT技能', type: 'records', ph: '每条记录用空行分隔，或导入 JSON 数组'},
+      {key: 'certificatesBulk', label: '批量技能证书', type: 'records', ph: '每条记录用空行分隔，或导入 JSON 数组'},
+      {key: 'competitionsBulk', label: '批量竞赛获奖', type: 'records', ph: '每条记录用空行分隔，或导入 JSON 数组'},
+      {key: 'honorsBulk', label: '批量其他荣誉', type: 'records', ph: '每条记录用空行分隔，或导入 JSON 数组'},
+      {key: 'worksBulk', label: '批量作品信息', type: 'records', ph: '每条记录用空行分隔，或导入 JSON 数组'},
       { key: '__divider_questions', type: 'divider', label: '附加问题' },
       { key: 'willingAllocation', label: '服从公司分配', type: 'select', options: ['', '是', '否'] },
       { key: 'acceptRelocation', label: '接受外派', type: 'select', options: ['', '是', '否'] },
@@ -217,6 +242,26 @@ const DEMO_PROFILE = {
 
 /* 站点规则可选的目标字段（与 content.js 的 FIELDS 保持一致） */
 const RULE_FIELDS = [
+  ['educationCollege', '学院'],
+  ['educationLab', '实验室'],
+  ['educationMentor', '导师姓名'],
+  ['languageSpeaking', '听说能力'],
+  ['languageWriting', '读写能力'],
+  ['internshipAchievement', '工作业绩'],
+  ['projectRole', '项目职务'],
+  ['projectResponsibility', '项目职责'],
+  ['researchChannel', '发布渠道'],
+  ['researchAuthorOrder', '作者顺序'],
+  ['researchUrl', '论文链接'],
+  ['skillName', '技能类别'],
+  ['skillLevel', '技能掌握程度'],
+  ['certificateName', '技能证书'],
+  ['competitionName', '竞赛名称'],
+  ['competitionLevel', '竞赛获奖等级'],
+  ['competitionDate', '竞赛获奖时间'],
+  ['honorName', '荣誉名称'],
+  ['workName', '作品名称'],
+  ['workUrl', '作品链接'],
   ['name', '姓名'], ['familyName', '姓'], ['givenName', '名'], ['gender', '性别'],
   ['birthDate', '出生年月'], ['politicalStatus', '政治面貌'], ['nation', '民族'],
   ['household', '户籍/籍贯'], ['householdType', '户口性质'], ['maritalStatus', '婚姻状况'],
@@ -285,7 +330,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   bind();
   renderSourceMaterial();
   await initProfileWorkflow(store);
-  $('#defaultFileStatus').textContent=defaultSync?.ok?'默认资料：content/个人资料.json'+(defaultSync.changed?' · 已应用文件更新':' · 文件未变化，保留管理页修改'):'默认资料文件读取失败；请检查文件并重新加载扩展。';
+  $('#defaultFileStatus').textContent=defaultSync?.ok?(defaultSync.source==='storage'?'使用本地保存的资料 · 可直接填写或导入，无需创建资料文件':'默认资料：content/个人资料.json'+(defaultSync.changed?' · 已应用文件更新':' · 文件未变化，保留管理页修改')):'默认资料文件读取失败；请检查文件并重新加载扩展。';
   if(!defaultSync?.ok)workflowStatus('默认资料文件不可用，现有资料保留。修正文件后再填写。',true);
   detectHost();
 });
@@ -436,7 +481,7 @@ async function detectHost() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab || tab.id == null) throw new Error('no tab');
-    const res = await chrome.tabs.sendMessage(tab.id, { type: 'PING' });
+    const res = await chrome.tabs.sendMessage(tab.id, { type: 'PING' }, {frameId:0});
     if (!res || !res.ok || !res.host) throw new Error('no host');
     currentHost = res.host;
     el.textContent = '当前网站：' + currentHost;
@@ -504,7 +549,7 @@ function buildSiteObservations(){
   }
 }
 
-/* ---------- Word / Excel / 文本资料 ---------- */
+/* ---------- PDF / Word / Excel / 文本资料 ---------- */
 
 function setSourceStatus(text, state) {
   const el = $('#sourceStatus');
@@ -531,8 +576,11 @@ async function readSourceFile(file) {
   const name = String(file.name || '资料');
   const ext = (name.split('.').pop() || '').toLowerCase();
   let text = '';
-  if (!['docx','xlsx','xls','csv','json','txt','md'].includes(ext)) throw new Error('暂不支持此格式，请选择 .docx、Excel 或文本文件');
-  if (ext === 'docx') {
+  if (!['pdf','docx','xlsx','xls','csv','json','txt','md'].includes(ext)) throw new Error('暂不支持此格式，请选择 PDF、.docx、Excel 或文本文件');
+  if (ext === 'pdf') {
+    const { extractPdfText } = await import('../shared/pdf-import.js');
+    text = (await extractPdfText(file)).text;
+  } else if (ext === 'docx') {
     if (!globalThis.mammoth) throw new Error('Word 解析组件加载失败');
     const result = await globalThis.mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
     text = result && result.value || '';
@@ -711,7 +759,7 @@ function bind() {
   $('#lastCheckBtn').addEventListener('click', async () => {
     try {
       const [tab] = await chrome.tabs.query({active:true,currentWindow:true});
-      const response = await withUiTimeout(chrome.tabs.sendMessage(tab.id,{type:'GET_SELF_CHECK'}),3000);
+      const response = await withUiTimeout(chrome.tabs.sendMessage(tab.id,{type:'GET_SELF_CHECK'},{frameId:0}),3000);
       if (!response.report) {showResult('本页暂无自检，请先点击填写并自检。',false);return;}
       renderSelfCheck(response.report,tab.id);
     } catch {showResult('自检记录不可用，请刷新页面后重新自检。',true);}
@@ -1063,7 +1111,7 @@ async function stopCurrentFill() {
   fillSession.stopped = true;
   $('#fillProgress').textContent = '正在停止，已填内容保留';
   try {
-    await withUiTimeout(chrome.tabs.sendMessage(fillSession.tabId, {type:'STOP_FILL'}), 3000);
+    await withUiTimeout(chrome.tabs.sendMessage(fillSession.tabId, {type:'STOP_FILL'},{frameId:0}), 3000);
   } catch (error) {
     $('#fillProgress').textContent = '未能确认停止，请刷新表单终止旧任务';
   }
@@ -1120,7 +1168,7 @@ function renderSelfCheck(report, tabId) {
       const row=document.createElement('li'),button=document.createElement('button'),explanation=document.createElement('p');
       button.type='button';button.className='self-check-target';button.textContent='定位 '+item.id+' '+(item.label||'未命名字段');
       explanation.className='self-check-advice';explanation.textContent=advice(item);
-      button.onclick=async()=>{try{const result=await chrome.tabs.sendMessage(tabId,{type:'LOCATE_SELF_CHECK',id:item.id});if(result.ok)window.close();else explanation.textContent='字段已变化，定位失效。请回到网页核对，必要时重新自检。';}catch{explanation.textContent='页面已刷新或连接失效，请回到网页核对。';}};
+      button.onclick=async()=>{try{const result=await chrome.tabs.sendMessage(tabId,{type:'LOCATE_SELF_CHECK',id:item.id},{frameId:0});if(result.ok)window.close();else explanation.textContent='字段已变化，定位失效。请回到网页核对，必要时重新自检。';}catch{explanation.textContent='页面已刷新或连接失效，请回到网页核对。';}};
       row.append(button,explanation);list.append(row);
     }
     details.append(list);root.append(details);
@@ -1147,14 +1195,14 @@ async function fillCurrentTab(selfCheck) {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab || tab.id == null) { showResult('未找到当前标签页', true); return; }
-    const runtime=await withUiTimeout(chrome.tabs.sendMessage(tab.id,{type:'PING'}),3000);
-    if(!runtime || runtime.contentBuild!=='1.15.9-dev'){
+    const runtime=await withUiTimeout(chrome.tabs.sendMessage(tab.id,{type:'PING'},{frameId:0}),3000);
+    if(!runtime || runtime.contentBuild!=='1.16.1-dev'){
       showResult('页面仍在使用旧版脚本。请先重新加载扩展，再刷新招聘页面后重试；本次未开始填写。',true);return;
     }
     fillSession = {tabId:tab.id, stopped:false, timer:null, polling:false};
     $('#stopFillBtn').hidden = false;
     $('#fillProgress').textContent = '正在分析页面';
-    const overview = await withUiTimeout(chrome.tabs.sendMessage(tab.id, { type: 'SCAN_FORM', useAI: false }), 45000);
+    const overview = await withUiTimeout(chrome.tabs.sendMessage(tab.id, { type: 'SCAN_FORM', useAI: false },{frameId:0}), 45000);
     if (fillSession.stopped) {showResult('已停止，未启动填写。', false); return;}
     if (overview && overview.note === 'sensitive-page') {
       showResult('已跳过：该页面包含密码输入框，插件不会扫描或填写登录页面。', true);
@@ -1178,7 +1226,7 @@ async function fillCurrentTab(selfCheck) {
       if (session.polling || session !== fillSession) return;
       session.polling = true;
       try {
-        const status = await withUiTimeout(chrome.tabs.sendMessage(tab.id, {type:'GET_FILL_STATUS'}), 2000);
+        const status = await withUiTimeout(chrome.tabs.sendMessage(tab.id, {type:'GET_FILL_STATUS'},{frameId:0}), 2000);
         if (session === fillSession && status && status.running && !session.stopped) {
           $('#fillProgress').textContent = status.phase === 'filling'
             ? '进度 ' + status.completed + '/' + status.total + '，当前：' + status.field
@@ -1194,7 +1242,7 @@ async function fillCurrentTab(selfCheck) {
       overwrite: overwriteThisRun,
       useAI: !!settings.aiEnabled,
       selfCheck,
-    }), 190000);
+    },{frameId:0}), 190000);
     if (res && ['fill-cancelled','fill-timeout','fill-error'].includes(res.note)) {
       const label = res.note === 'fill-cancelled' ? '已停止' : res.note === 'fill-timeout' ? '填写超时，已退出' : '填写异常，已退出';
       showResult(label + '；此前完成 ' + (res.filled || []).length + ' 项，剩余字段尚未完成；网站暂存未验证。', true);

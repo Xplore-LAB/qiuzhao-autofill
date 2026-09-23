@@ -1,6 +1,6 @@
 /* Model output cannot supply selectors, scripts or personal values. */
 (function(root) {
-  const categories=new Set(['educationBulk','internshipsBulk','projectsBulk','awardsBulk','researchBulk','languagesBulk']);
+  const categories=new Set(['skillsBulk','certificatesBulk','competitionsBulk','honorsBulk','worksBulk','educationBulk','internshipsBulk','projectsBulk','awardsBulk','researchBulk','languagesBulk']);
   function validate(raw,input) {
     if(!raw || !Array.isArray(raw.controls) || !Array.isArray(raw.sections))throw Error('invalid-page-plan');
     const fields=new Set(input.fields.map(f=>f.key));

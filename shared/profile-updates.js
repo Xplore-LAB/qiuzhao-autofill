@@ -47,6 +47,9 @@
         const at=Date.now(), update={profile:merged,profileUpdatedAt:at};
         if(args.checkpoint && keys.length) update.profileRecovery={profile:current,at,label:String(args.label||'资料更新').slice(0,80)};
         if(args.clearDraft) update.pendingProfileUpdate=null;
+        // Commit the marker with the profile so a worker restart cannot reimport
+        // the same file over subsequent edits made in the manager.
+        if(typeof args.defaultFileHash==='string') update.defaultProfileFileHash=args.defaultFileHash;
         await storage.set(update);
         return {ok:true,profile:merged,at};
       });

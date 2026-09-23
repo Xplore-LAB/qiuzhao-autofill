@@ -1,11 +1,17 @@
 {
-  "name": "autofill-tool-benchmark",
-  "version": "0.1.2",
+  "name": "qiuzhao-autofill",
+  "version": "1.16.1",
   "private": true,
   "scripts": {
     "test": "node scripts/check-extension.cjs",
     "test:unit": "node scripts/check-extension.cjs --unit",
-    "test:benchmark": "node test/run.cjs"
+    "test:extension": "node test/real-extension-workflow.cjs"
   },
-  "devDependencies": {"playwright": "1.62.1"}
+  "devDependencies": {
+    "pdfjs-dist": "6.3.289",
+    "playwright": "1.62.1"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
 }

@@ -1,0 +1,76 @@
+{
+  "app": "qiuzhao-autofill",
+  "kind": "structured-profile",
+  "schemaVersion": 1,
+  "note": "固定合成资料，仅用于经授权的快手页面试填，不代表用户本人。不得点击网站保存或提交。证件号码与附件故意留空；学校采用真实候选名称，仅用于测试搜索选择器。",
+  "profile": {
+    "name": "演示测试用户",
+    "gender": "男",
+    "birthDate": "2000-01-01",
+    "phone": "13800000000",
+    "email": "autofill-demo@example.com",
+    "school": "浙江大学",
+    "major": "计算机科学与技术",
+    "degree": "本科",
+    "graduationDate": "2026-06",
+    "rank": "前20%",
+    "recruitmentSource": "校园就业网",
+    "educationBulk": [
+      {
+        "educationSchool": "浙江大学",
+        "educationMajor": "计算机科学与技术",
+        "educationStartDate": "2022-09",
+        "educationEndDate": "2026-06",
+        "educationDegree": "本科",
+        "educationRank": "前20%"
+      }
+    ],
+    "internshipsBulk": [
+      {
+        "internshipCompany": "演示测试科技公司",
+        "internshipRole": "软件开发实习生",
+        "internshipStartDate": "2025-07",
+        "internshipEndDate": "2025-09",
+        "internshipContent": "固定演示经历：参与功能开发、接口测试和文档整理，仅用于表单测试。"
+      }
+    ],
+    "projectsBulk": [
+      {
+        "projectName": "演示表单测试项目",
+        "projectStartDate": "2025-03",
+        "projectEndDate": "2025-06",
+        "projectDescription": "固定演示项目：实现字段识别、结果核验和测试报告，不代表真实经历。"
+      }
+    ],
+    "researchBulk": [
+      {
+        "researchName": "演示论文：网页表单识别方法测试",
+        "researchDate": "2025-06",
+        "researchDescription": "固定演示成果，未发表，仅用于控件测试。"
+      }
+    ],
+    "languagesBulk": [
+      {
+        "languageType": "英语",
+        "languageProficiency": "熟练"
+      }
+    ],
+    "awardsBulk": [
+      {
+        "awardName": "演示程序设计竞赛一等奖",
+        "awardDate": "2025-05",
+        "awardLevel": "校级",
+        "awardDescription": "固定演示奖项，仅用于识别竞赛类别。"
+      }
+    ],
+    "customs": [
+      { "label": "国家地区", "value": "中国" },
+      { "label": "现居地", "value": "杭州" },
+      { "label": "紧急联系人", "value": "演示联系人" },
+      { "label": "紧急联系人电话", "value": "13900000000" },
+      { "label": "学院", "value": "计算机科学与技术学院" },
+      { "label": "实验室", "value": "演示软件实验室" },
+      { "label": "导师姓名", "value": "演示导师" }
+    ]
+  }
+}

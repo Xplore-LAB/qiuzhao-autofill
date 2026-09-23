@@ -1,4 +1,4 @@
-/* 秋招网申自动填充助手 - content script v1.15.9-dev
+/* 秋招网申自动填充助手 - content script v1.16.1-dev
  *
  * 职责：
  *   1. 识别页面中的网申表单字段（中文/英文；label / placeholder / aria-label / name 属性多路匹配）
@@ -28,6 +28,26 @@
    * multi:true：允许一个字段匹配多个控件（期望工作地点的省市级联）
    */
   const FIELDS = [
+    { key: 'educationCollege', label: '学院', scope: /教育经历/, patterns: [/学院|院系/] },
+    { key: 'educationLab', label: '实验室', scope: /教育经历/, patterns: [/实验室/] },
+    { key: 'educationMentor', label: '导师姓名', scope: /教育经历/, patterns: [/导师姓名/] },
+    { key: 'languageSpeaking', label: '听说能力', type: 'choice', scope: /语言能力/, patterns: [/听说能力/] },
+    { key: 'languageWriting', label: '读写能力', type: 'choice', scope: /语言能力/, patterns: [/读写能力/] },
+    { key: 'internshipAchievement', label: '工作业绩', scope: /实习经历/, patterns: [/工作业绩/] },
+    { key: 'projectRole', label: '项目职务', scope: /项目经历/, patterns: [/^职务$|项目职务/] },
+    { key: 'projectResponsibility', label: '项目职责', scope: /项目经历/, patterns: [/项目职责/] },
+    { key: 'researchChannel', label: '发布渠道', scope: /论文|研究成果/, patterns: [/发布渠道|发表刊物/] },
+    { key: 'researchAuthorOrder', label: '作者顺序', type: 'choice', scope: /论文|研究成果/, patterns: [/作者顺序/] },
+    { key: 'researchUrl', label: '论文链接', scope: /论文|研究成果/, patterns: [/论文链接/] },
+    { key: 'skillName', label: '技能类别', type: 'choice', scope: /IT技能/, patterns: [/技能类别/] },
+    { key: 'skillLevel', label: '技能掌握程度', type: 'choice', scope: /IT技能/, patterns: [/^掌握程度$/] },
+    { key: 'certificateName', label: '技能证书', scope: /技能证书/, patterns: [/技能证书/] },
+    { key: 'competitionName', label: '竞赛名称', scope: /竞赛获奖/, patterns: [/竞赛名称/] },
+    { key: 'competitionLevel', label: '竞赛获奖等级', scope: /竞赛获奖/, patterns: [/竞赛获奖等级/] },
+    { key: 'competitionDate', label: '竞赛获奖时间', type: 'date', scope: /竞赛获奖/, patterns: [/竞赛获奖时间/] },
+    { key: 'honorName', label: '荣誉名称', scope: /其他荣誉/, patterns: [/荣誉名称/] },
+    { key: 'workName', label: '作品名称', scope: /作品信息/, patterns: [/作品名称/] },
+    { key: 'workUrl', label: '作品链接', scope: /作品信息/, patterns: [/作品链接/] },
     { key: 'recommendationCode', label: '推荐码', multi: true, patterns: [/^推荐码$|内推码|推荐人编码|邀请码/, /referralcode|invitecode/] },
     { key: 'familyName', label: '姓', patterns: [/姓氏/, /^姓$/, /lastname|surname|familyname/] },
     { key: 'givenName', label: '名', patterns: [/^名字$/, /^名$/, /givenname|firstname/] },
@@ -103,7 +123,7 @@
     { key: 'acceptRelocation', label: '接受外派', type: 'choice', patterns: [/是否接受外派|接受外派/], options: { '是': ['是', '接受', 'yes'], '否': ['否', '不接受', 'no'] } },
     { key: 'acceptUnderdevelopedOverseas', label: '接受海外欠发达地区分配', type: 'choice', patterns: [/是否可以接受海外欠发达地区分配|海外欠发达地区分配/], options: { '是': ['是', '接受', 'yes'], '否': ['否', '不接受', 'no'] } },
     { key: 'hasRelativesAtCompany', label: '亲属是否在本公司工作', type: 'choice', patterns: [/是否有亲属在本公司工作|亲属在本公司工作/], options: { '是': ['是', '有', 'yes'], '否': ['否', '无', 'no'] } },
-    { key: 'school', label: '毕业院校', patterns: [/毕业院校|就读院校|毕业学校|院校/, /school|university|college/], excludes: [/邮箱|高中|初中|中学|邮寄/] },
+    { key: 'school', label: '毕业院校', patterns: [/最高学历学校|毕业院校|就读院校|毕业学校|院校/, /school|university|college/], excludes: [/邮箱|高中|初中|中学|邮寄/] },
     { key: 'major', label: '专业', patterns: [/毕业专业|所学专业|专业/, /major/], excludes: [/课程|职务|职称|学科/] },
     { key: 'degree', label: '学历/学位', type: 'choice', patterns: [/学历|学位|文化程度/, /education|edulevel|edu_level|degree|qualification/],
       excludes: [/学科|专业类别|学科门类/],
@@ -120,10 +140,15 @@
   ];
 
   const REPEAT_GROUPS = [
+    {bulkKey: 'skillsBulk', label: 'IT技能', primaryKey: 'skillName', fieldKeys: ['skillName', 'skillLevel'], aliases: {技能类别: 'skillName', 技能掌握程度: 'skillLevel'}},
+    {bulkKey: 'certificatesBulk', label: '技能证书', primaryKey: 'certificateName', fieldKeys: ['certificateName'], aliases: {技能证书: 'certificateName'}},
+    {bulkKey: 'competitionsBulk', label: '竞赛获奖', primaryKey: 'competitionName', fieldKeys: ['competitionName', 'competitionLevel', 'competitionDate'], aliases: {竞赛名称: 'competitionName', 竞赛获奖等级: 'competitionLevel', 竞赛获奖时间: 'competitionDate'}},
+    {bulkKey: 'honorsBulk', label: '其他荣誉', primaryKey: 'honorName', fieldKeys: ['honorName'], aliases: {荣誉名称: 'honorName'}},
+    {bulkKey: 'worksBulk', label: '作品信息', primaryKey: 'workName', fieldKeys: ['workName', 'workUrl'], aliases: {作品名称: 'workName', 作品链接: 'workUrl'}},
     {
       bulkKey: 'educationBulk', label: '教育经历', primaryKey: 'educationSchool',
-      fieldKeys: ['educationSchool', 'educationMajor', 'educationStartDate', 'educationEndDate', 'educationDegree', 'educationDiscipline', 'academicDegree', 'trainingMethod', 'educationRank', 'unifiedRecruitment', 'overseasEducation'],
-      aliases: {
+      fieldKeys: ['educationCollege', 'educationLab', 'educationMentor', 'educationSchool', 'educationMajor', 'educationStartDate', 'educationEndDate', 'educationDegree', 'educationDiscipline', 'academicDegree', 'trainingMethod', 'educationRank', 'unifiedRecruitment', 'overseasEducation'],
+      aliases: { 学院: 'educationCollege', 实验室: 'educationLab', 导师姓名: 'educationMentor',
         学校: 'educationSchool', 学校名称: 'educationSchool', 院校: 'educationSchool', 院校名称: 'educationSchool',
         专业: 'educationMajor', 专业名称: 'educationMajor', 开始时间: 'educationStartDate', 入学时间: 'educationStartDate',
         结束时间: 'educationEndDate', 毕业时间: 'educationEndDate', 学历: 'educationDegree', 学科: 'educationDiscipline',
@@ -133,19 +158,19 @@
     },
     {
       bulkKey: 'languagesBulk', label: '语言能力', primaryKey: 'languageType',
-      fieldKeys: ['languageType', 'languageProficiency'],
-      aliases: { 语言: 'languageType', 语种: 'languageType', 语言类型: 'languageType', 掌握程度: 'languageProficiency', 熟练程度: 'languageProficiency', 语言水平: 'languageProficiency' }
+      fieldKeys: ['languageSpeaking', 'languageWriting', 'languageType', 'languageProficiency'],
+      aliases: { 听说能力: 'languageSpeaking', 读写能力: 'languageWriting',  语言: 'languageType', 语种: 'languageType', 语言类型: 'languageType', 掌握程度: 'languageProficiency', 熟练程度: 'languageProficiency', 语言水平: 'languageProficiency' }
     },
     {
       bulkKey: 'projectsBulk', label: '项目经历', primaryKey: 'projectName',
-      fieldKeys: ['projectName', 'projectStartDate', 'projectEndDate', 'projectDescription'],
-      aliases: { 项目: 'projectName', 项目名称: 'projectName', 项目经历名称: 'projectName', 开始时间: 'projectStartDate', 结束时间: 'projectEndDate', 项目描述: 'projectDescription', 项目经历描述: 'projectDescription', 描述: 'projectDescription', 内容: 'projectDescription' },
+      fieldKeys: ['projectRole', 'projectResponsibility', 'projectName', 'projectStartDate', 'projectEndDate', 'projectDescription'],
+      aliases: { 项目职务: 'projectRole', 项目职责: 'projectResponsibility',  项目: 'projectName', 项目名称: 'projectName', 项目经历名称: 'projectName', 开始时间: 'projectStartDate', 结束时间: 'projectEndDate', 项目描述: 'projectDescription', 项目经历描述: 'projectDescription', 描述: 'projectDescription', 内容: 'projectDescription' },
       timeKeys: ['projectStartDate', 'projectEndDate']
     },
     {
       bulkKey: 'internshipsBulk', label: '实习经历', primaryKey: 'internshipCompany',
-      fieldKeys: ['internshipCompany', 'internshipRole', 'internshipStartDate', 'internshipEndDate', 'internshipContent'],
-      aliases: { 单位: 'internshipCompany', 单位名称: 'internshipCompany', 公司: 'internshipCompany', 公司名称: 'internshipCompany', 角色: 'internshipRole', 岗位: 'internshipRole', 职位: 'internshipRole', 开始时间: 'internshipStartDate', 结束时间: 'internshipEndDate', 实习内容: 'internshipContent', 工作内容: 'internshipContent', 描述: 'internshipContent' },
+      fieldKeys: ['internshipAchievement', 'internshipCompany', 'internshipRole', 'internshipStartDate', 'internshipEndDate', 'internshipContent'],
+      aliases: { 工作业绩: 'internshipAchievement',  单位: 'internshipCompany', 单位名称: 'internshipCompany', 公司: 'internshipCompany', 公司名称: 'internshipCompany', 角色: 'internshipRole', 岗位: 'internshipRole', 职位: 'internshipRole', 开始时间: 'internshipStartDate', 结束时间: 'internshipEndDate', 实习内容: 'internshipContent', 工作内容: 'internshipContent', 描述: 'internshipContent' },
       timeKeys: ['internshipStartDate', 'internshipEndDate']
     },
     {
@@ -155,8 +180,8 @@
     },
     {
       bulkKey: 'researchBulk', label: '研究成果', addLabels: ['添加研究成果', '添加研究情况', '添加科研经历', '添加科研成果', '添加论文专利'], primaryKey: 'researchName',
-      fieldKeys: ['researchName', 'researchDate', 'researchLevel', 'researchDescription'],
-      aliases: { 名称: 'researchName', 成果名称: 'researchName', 研究项目: 'researchName', 课题名称: 'researchName', 论文名称: 'researchName', 论文题目: 'researchName', 专利名称: 'researchName', 时间: 'researchDate', 成果时间: 'researchDate', 研究时间: 'researchDate', 发表时间: 'researchDate', 授权时间: 'researchDate', 等级: 'researchLevel', 成果等级: 'researchLevel', 研究类型: 'researchLevel', 成果类型: 'researchLevel', 描述: 'researchDescription', 成果描述: 'researchDescription', 研究内容: 'researchDescription', 研究职责: 'researchDescription', 成果说明: 'researchDescription' }
+      fieldKeys: ['researchChannel', 'researchAuthorOrder', 'researchUrl', 'researchName', 'researchDate', 'researchLevel', 'researchDescription'],
+      aliases: { 发布渠道: 'researchChannel', 作者顺序: 'researchAuthorOrder', 论文链接: 'researchUrl',  名称: 'researchName', 成果名称: 'researchName', 研究项目: 'researchName', 课题名称: 'researchName', 论文名称: 'researchName', 论文题目: 'researchName', 专利名称: 'researchName', 时间: 'researchDate', 成果时间: 'researchDate', 研究时间: 'researchDate', 发表时间: 'researchDate', 授权时间: 'researchDate', 等级: 'researchLevel', 成果等级: 'researchLevel', 研究类型: 'researchLevel', 成果类型: 'researchLevel', 描述: 'researchDescription', 成果描述: 'researchDescription', 研究内容: 'researchDescription', 研究职责: 'researchDescription', 成果说明: 'researchDescription' }
     }
   ];
 
@@ -612,6 +637,7 @@
       '.el-radio.is-checked', '.arco-radio-checked', '.ivu-radio-wrapper-checked'
     ].join(',');
     return Array.from(new Set(Array.from(el.querySelectorAll(selector))
+      .filter(node => !isCustomRadioGroup(el) || !isRadio(node) || node.checked)
       .filter(node => isVisible(node) || (isRadio(node) && node.checked))
       .filter(node => !node.matches('input:not([readonly]),textarea') || isCustomRadioGroup(el) || !!node.closest('.ant-picker,.el-date-editor,.arco-picker'))
       .map(node => {
@@ -897,35 +923,67 @@
 
   async function fillAntCalendar(anchor, layer, match) {
     const year = Number(match[1]), month = Number(match[2]), day = Number(match[3] || 1);
-    if (month < 1 || month > 12 || day < 1 || day > new Date(year,month,0).getDate()) return false;
+    if (!Number.isInteger(year) || year < 1 || month < 1 || month > 12 || day < 1 || day > new Date(year,month,0).getDate()) return false;
     const wanted = year + '-' + pad2(month) + '-' + pad2(day);
+    const panelNow = () => Array.from(layer.querySelectorAll('.ant-picker-panel')).find(isVisible) || layer;
+    const cellsNow = panel => Array.from(panel.querySelectorAll('.ant-picker-cell[title]')).filter(isVisible);
+    const modeNow = panel => panel.querySelector('.ant-picker-year-panel') ? 'year' : panel.querySelector('.ant-picker-month-panel') ? 'month' : 'date';
+    const monthOnly = modeNow(panelNow()) === 'month';
+    const allowed = node => node && isVisible(node) && !node.disabled && node.getAttribute('aria-disabled') !== 'true' && !node.classList.contains('ant-picker-cell-disabled');
+    const signature = () => {
+      const panel=panelNow();
+      return modeNow(panel) + ':' + cellsNow(panel).map(cell=>cell.title).join('|');
+    };
+    const move = async button => {
+      if (!allowed(button)) return false;
+      const previous=signature();
+      if (!safeCustomClick(button)) return false;
+      for (let retry=0;retry<15;retry++) {await wait(80);if(signature()!==previous)return true;}
+      return false;
+    };
+    const navigation = (panel, selector) => {
+      // Linked range panels expose backward/forward arrows on opposite sides.
+      const buttons=Array.from(layer.querySelectorAll(selector)).filter(allowed);
+      return buttons.length===1 ? buttons[0] : Array.from(panel.querySelectorAll(selector)).find(allowed);
+    };
     for (let step = 0; step < 100; step++) {
-      const panels=Array.from(layer.querySelectorAll('.ant-picker-panel')).filter(isVisible);
-      const panel=panels[0]||layer;
-      const cells = Array.from(panel.querySelectorAll('.ant-picker-cell[title]')).filter(isVisible);
-      const exact = cells.filter(c => c.title === wanted || (layer.querySelector('.ant-picker-month-panel') && c.title === wanted.slice(0,7)))
-        .filter(c => !c.classList.contains('ant-picker-cell-disabled') && c.getAttribute('aria-disabled') !== 'true');
-      if (exact.length === 1) {
-        const expected = layer.querySelector('.ant-picker-month-panel') ? wanted.slice(0,7) : wanted;
-        if (!safeCustomClick(exact[0].querySelector('.ant-picker-cell-inner') || exact[0])) return false;
-        for (let n = 0; n < 15; n++) {await wait(100);if (Array.from(anchor.querySelectorAll('input')).some(input=>input.value===expected)) return true;}
+      const panel=panelNow(),mode=modeNow(panel),cells=cellsNow(panel);
+      const desired=mode==='year' ? String(year) : mode==='month' ? wanted.slice(0,7) : wanted;
+      const exact=cells.filter(cell=>cell.title===desired);
+      if (exact.length) {
+        if (exact.length!==1 || !allowed(exact[0])) return false;
+        const target=exact[0].querySelector('.ant-picker-cell-inner') || exact[0];
+        if (!allowed(target)) return false;
+        if (mode==='year' || (mode==='month' && !monthOnly)) {
+          if (!await move(target)) return false;
+          continue;
+        }
+        if (!safeCustomClick(target)) return false;
+        for (let n=0;n<15;n++) {await wait(100);if(Array.from(anchor.querySelectorAll('input')).some(input=>input.value===desired))return true;}
         return false;
       }
-      const current = cells.find(c => c.classList.contains('ant-picker-cell-in-view')) || cells[0];
-      const date = current && /^(\d{4})-(\d{2})/.exec(current.title);
+      const current=cells.find(cell=>cell.classList.contains('ant-picker-cell-in-view')) || cells[0];
+      const date=current && /^(\d{4})(?:-(\d{2}))?/.exec(current.title);
       if (!date) return false;
-      const delta = (year - Number(date[1])) * 12 + month - Number(date[2]);
-      if (!delta) return false;
-      const selector = Math.abs(delta) >= 12 ? (delta < 0 ? '.ant-picker-header-super-prev-btn' : '.ant-picker-header-super-next-btn') : (delta < 0 ? '.ant-picker-header-prev-btn' : '.ant-picker-header-next-btn');
-      // Range pickers hide forward navigation in the left panel and backward in the right.
-      const buttons = Array.from(layer.querySelectorAll(selector)).filter(b=>isVisible(b)&&!b.disabled);
-      if(typeof traceStep==='function')traceStep('date-navigation',anchor,null,{step,count:buttons.length,direction:delta<0?'previous':'next'});
-      const button = buttons.length===1 ? buttons[0] : panel.querySelector(selector);
-      const previousTitle = current.title;
-      if (!button || button.disabled || !safeCustomClick(button)) return false;
-      let changed = false;
-      for (let retry=0;retry<15;retry++) {await wait(80);const now=layer.querySelector('.ant-picker-cell-in-view[title]') || layer.querySelector('.ant-picker-cell[title]');if(now && now.title !== previousTitle){changed=true;break;}}
-      if (!changed) return false;
+      const currentYear=Number(date[1]);
+      let button,direction=year<currentYear?'previous':'next';
+      if (mode==='year') {
+        // Year panels page by decades, so a distant birthday takes only a few clicks.
+        button=navigation(panel,year<currentYear?'.ant-picker-header-super-prev-btn':'.ant-picker-header-super-next-btn');
+      } else if (year!==currentYear && allowed(panel.querySelector('.ant-picker-year-btn'))) {
+        button=panel.querySelector('.ant-picker-year-btn');
+      } else if (mode==='date' && year===currentYear && Number(date[2])!==month && allowed(panel.querySelector('.ant-picker-month-btn'))) {
+        button=panel.querySelector('.ant-picker-month-btn');
+      } else {
+        // Older Ant-like widgets may expose only arrows; retain their bounded fallback.
+        const delta=(year-currentYear)*12+month-Number(date[2] || 1);
+        if (!delta) return false;
+        direction=delta<0?'previous':'next';
+        const selector=mode==='month'||Math.abs(delta)>=12 ? (delta<0?'.ant-picker-header-super-prev-btn':'.ant-picker-header-super-next-btn') : (delta<0?'.ant-picker-header-prev-btn':'.ant-picker-header-next-btn');
+        button=navigation(panel,selector);
+      }
+      if(typeof traceStep==='function')traceStep('date-navigation',anchor,null,{step,count:button?1:0,direction});
+      if (!await move(button)) return false;
     }
     return false;
   }
@@ -2177,6 +2235,23 @@
     return matched.size >= 3 && recruitmentSpecific.some(key => matched.has(key));
   }
 
+  function customMatchScore(label, candidates) {
+    const wanted = normalize(label);
+    if (!wanted) return 0;
+    // Explicit labels take precedence over nearby text, placeholders and DOM IDs.
+    // Substring matches confuse a contact name with its telephone/address fields.
+    const cands = candidates || [];
+    const explicit = cands.filter(c => c.w >= 8 && normalize(c.text));
+    const eligible = explicit.length ? explicit : cands;
+    let score = 0;
+    for (const cand of eligible) {
+      let text = normalize(cand.text);
+      if (!explicit.length) text = text.replace(/^(请输入|请填写|请选择)/, '');
+      if (text === wanted) score = Math.max(score, Number(cand.w) || 1);
+    }
+    return score;
+  }
+
   function coverageSummary(controls, texts, profile, customs) {
     const missingData = [];
     const remaining = [];
@@ -2208,13 +2283,7 @@
         continue;
       }
 
-      const custom = customs.find(cf => {
-        const wanted = normalize(cf.label);
-        return wanted && cands.some(c => {
-          const n = normalize(c.text);
-          return n && (n.indexOf(wanted) >= 0 || (n.length >= 3 && wanted.indexOf(n) >= 0));
-        });
-      });
+      const custom = customs.find(cf => customMatchScore(cf.label, cands) > 0);
       if (custom) {
         if (!controlHasValue(el)) add('remaining', label);
       } else if (!controlHasValue(el)) {
@@ -2521,26 +2590,15 @@
       }
     }
 
-    // 4) 自定义字段（字段名与控件候选文本双向包含匹配）
+    // 4) 自定义字段：标签精确对应，并且最高分控件必须唯一。
     for (const cf of customs) {
-      const nLabel = normalize(cf.label);
-      if (!nLabel) continue;
-      let best = null, bestScore = 0;
-      for (const el of controls) {
-        if (used.has(el)) continue;
-        for (const cand of texts.get(el) || []) {
-          const n = normalize(cand.text);
-          if (!n) continue;
-          const hit = n.indexOf(nLabel) >= 0 || (n.length >= 3 && nLabel.indexOf(n) >= 0);
-          if (hit) {
-            const s = cand.w + n.length;
-            if (s > bestScore) { bestScore = s; best = el; }
-          }
-        }
-      }
-      if (best) {
-        used.add(best);
-        await applyControl(best, { key: 'custom:' + cf.label, label: cf.label }, cf.value, overwrite, summary, opts);
+      const matches = controls.filter(el => !used.has(el))
+        .map(el => ({el, score: customMatchScore(cf.label, texts.get(el))}))
+        .filter(item => item.score > 0).sort((a, b) => b.score - a.score);
+      const best = matches[0];
+      if (best && (!matches[1] || best.score > matches[1].score)) {
+        used.add(best.el);
+        await applyControl(best.el, { key: 'custom:' + cf.label, label: cf.label }, cf.value, overwrite, summary, opts);
       }
     }
 
@@ -2751,7 +2809,32 @@
   /* ================= 消息入口 & 初始化 ================= */
 
   let pendingManualFill = null;
+  let lastFillPreview = null;
   let preflightAiEvents=[];
+
+  function previewControlState(el) {
+    return {el,value:auditValue(el),labels:JSON.stringify(getTextCandidates(el).map(item=>item.text))};
+  }
+  async function previewForm() {
+    if(activeFillRun)return {note:'fill-running'};
+    if(hasVisiblePassword())return {note:'sensitive-page'};
+    await ensureDefaultProfileLoaded();
+    const {profile={}}=await chrome.storage.local.get('profile');
+    const controls=collectControls(true),overview=buildPageOverview(profile,controls);
+    lastFillPreview={token:crypto.randomUUID(),url:location.href,profile:JSON.stringify(profile),controls:controls.map(previewControlState)};
+    return {...overview,previewToken:lastFillPreview.token};
+  }
+  async function validFillPreview(token) {
+    const preview=lastFillPreview;
+    if(!preview||preview.token!==token||preview.url!==location.href)return false;
+    const {profile={}}=await chrome.storage.local.get('profile');
+    const controls=collectControls(true);
+    if(hasVisiblePassword() || JSON.stringify(profile)!==preview.profile || controls.length!==preview.controls.length)return false;
+    return controls.every((el,i)=>{
+      const current=previewControlState(el),before=preview.controls[i];
+      return el===before.el && current.value===before.value && current.labels===before.labels;
+    });
+  }
 
   function traceStep(stage,el,field,detail={}){
     const run=activeFillRun;if(!run){if(stage.startsWith('ai-'))preflightAiEvents.push({at:Date.now(),stage,detail});preflightAiEvents=preflightAiEvents.slice(-20);return;}
@@ -2836,7 +2919,7 @@
     const report=!run.automatic && lastSelfCheck && lastSelfCheck.report;
     return {
       startedAt:run.startedAt,durationMs:Date.now()-run.startedAt,host:location.hostname,
-      contentBuild:'1.15.9-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
+      contentBuild:'1.16.1-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
       events:run.events||[],droppedEvents:run.droppedEvents||0,
       trigger:run.automatic?'automatic':'manual',verification:run.automatic?'immediate':report?'final':'incomplete',
       outcome:['fill-cancelled','fill-timeout','fill-error','sensitive-page'].includes(result.note)?result.note:run.finished||run.automatic?'finished':'running',
@@ -3014,6 +3097,16 @@
   }
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (!msg || typeof msg !== 'object') return;
+    if(msg.type==='SHOW_AUTOFILL_NOTICE'){
+      toast('请打开秋招助手侧栏，识别并选择本次要填写的表单区域。',5000);sendResponse({ok:true});return;
+    }
+    if (msg.type === 'PROBE_FORM_FRAMES') {
+      const sensitive=hasVisiblePassword();
+      chrome.runtime.sendMessage({type:'REPORT_FORM_FRAME',requestId:msg.requestId,
+        frame:{contentBuild:'1.16.1-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
+        .then(()=>sendResponse({ok:true}),()=>sendResponse({ok:false}));
+      return true;
+    }
     if (msg.type === 'GET_SELF_CHECK') {sendResponse(lastSelfCheck ? {report:lastSelfCheck.report} : {error:'no-report'});return;}
     if (msg.type === 'LOCATE_SELF_CHECK') {
       const el = lastSelfCheck && lastSelfCheck.targets.get(msg.id);
@@ -3021,7 +3114,7 @@
       el.scrollIntoView({block:'center',behavior:'smooth'});flash(el);sendResponse({ok:true});return;
     }
     if (msg.type === 'PING') {
-      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.15.9-dev' });
+      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.1-dev' });
       return;
     }
     if (msg.type === 'SCAN_FORM') {
@@ -3029,6 +3122,9 @@
         .then(r => sendResponse(r))
         .catch(e => sendResponse({ error: String(e), totalControls: 0, emptyControls: 0, ruleCandidates: 0, aiCandidates: 0, repeatSections: [] }));
       return true;
+    }
+    if (msg.type === 'PREVIEW_FORM') {
+      previewForm().then(sendResponse).catch(()=>sendResponse({note:'preview-error'}));return true;
     }
     if (msg.type === 'GET_FILL_STATUS') {
       const run = activeFillRun;
@@ -3041,7 +3137,11 @@
       return;
     }
     if (msg.type === 'FILL_FORM') {
-      if (!pendingManualFill) pendingManualFill = runManualFill(!!msg.overwrite, !!msg.useAI, !!msg.selfCheck)
+      if (!pendingManualFill) pendingManualFill = (async()=>{
+        if(msg.previewToken && !await validFillPreview(msg.previewToken))return {note:'preview-expired',filled:[],failed:[]};
+        lastFillPreview=null;
+        return runManualFill(!!msg.overwrite, !!msg.useAI, !!msg.selfCheck);
+      })()
         .finally(() => { pendingManualFill = null; });
       pendingManualFill
         .then(r => {

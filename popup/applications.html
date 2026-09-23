@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>岗位与投递记录 · 秋招助手</title><link rel="stylesheet" href="applications.css"></head>
+<body>
+<main>
+  <header><p class="eyebrow">秋招助手 · 本地工作台</p><h1>岗位与投递记录</h1><p class="muted">收藏岗位，记录下一步。填写完成不会自动记为已投递。</p></header>
+  <details class="panel" id="add-panel"><summary>手动收藏岗位</summary>
+    <form id="add-form">
+      <label class="wide">岗位链接 <span aria-hidden="true">*</span><input name="url" type="url" required maxlength="2048" placeholder="https://招聘网站/岗位详情"></label>
+      <label>岗位名称<input name="title" required maxlength="200" autocomplete="off"></label>
+      <label>公司<input name="company" maxlength="200" autocomplete="off"></label>
+      <label>地点<input name="location" maxlength="200" autocomplete="off"></label>
+      <label>截止日期<input name="deadline" type="date"></label>
+      <label class="wide">岗位描述<textarea name="description" maxlength="12000"></textarea></label>
+      <div class="wide"><button type="submit" class="primary">收藏岗位</button></div>
+    </form>
+  </details>
+  <section class="toolbar" aria-label="查找和导出">
+    <label>搜索<input id="search" type="search" placeholder="岗位、公司、地点或备注"></label>
+    <label>状态<select id="status-filter"><option value="">全部状态</option></select></label>
+    <div class="exports"><button id="export-json" disabled>导出 JSON</button><button id="export-csv" disabled>导出 CSV</button></div>
+  </section>
+  <p id="message" role="status" aria-live="polite"></p>
+  <p id="count" class="muted"></p>
+  <div id="records" aria-label="岗位记录"></div>
+  <p id="empty" class="empty" hidden>暂无岗位。打开招聘页面，在插件侧栏收藏岗位，或在上方手动添加。</p>
+  <footer>记录仅保存在本浏览器的扩展本地存储中。导出包含岗位及备注，请自行妥善保管；卸载扩展会删除本地记录。</footer>
+</main>
+<script src="../shared/applications.js"></script><script src="applications.js"></script>
+</body></html>

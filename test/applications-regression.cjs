@@ -1,0 +1,108 @@
+const assert=require('node:assert/strict');
+const A=require('../shared/applications.js');
+const clone=value=>JSON.parse(JSON.stringify(value));
+(async()=>{
+  assert.equal(A.normalizeUrl('https://Example.com/job?jobId=12&utm_source=demo&z=1&a=2#apply'),'https://example.com/job?a=2&jobId=12&z=1');
+  assert.equal(A.normalizeUrl('https://example.com/job?sourceId=12&from=search'),'https://example.com/job?from=search&sourceId=12');
+  for(const url of ['javascript:alert(1)','data:text/html,demo','file:///tmp/demo','https://demo:secret@example.com','not a url','//example.com'])assert.throws(()=>A.normalizeUrl(url));
+  assert.equal(A.normalizeUrl('https://example.com/?utm_source=x#/jobs/123?utm_campaign=x&jobId=123&b=2&a=1'),'https://example.com/#/jobs/123?a=1&b=2&jobId=123');
+  assert.equal(A.normalizeUrl('https://example.com/#!/jobs/456?utm_source=x'),'https://example.com/#!/jobs/456');
+  assert.equal(A.normalizeUrl('https://example.com/#!job?jobId=789&fbclid=x'),'https://example.com/#!job?jobId=789');
+  let data={},fails=false,writes=0,clock=1000,id=0;
+  const storage={get:async()=>{await new Promise(resolve=>setTimeout(resolve,1));return clone(data);},set:async update=>{if(fails)throw new Error('storage unavailable');writes++;data={...data,...clone(update)};}};
+  const store=A.createStore(storage,{now:()=>++clock,makeId:()=>`demo-${++id}`});
+  await assert.rejects(store.save({url:'https://example.com/job'}),/岗位名称/);
+  const job=await store.save({url:'https://example.com/job?jobId=12&utm_source=demo',title:'演示算法工程师',description:'职责：开发演示系统',source:'jsonld',apiKey:'must-not-persist',profile:{phone:'must-not-persist'},status:'submitted',notes:'must-not-persist'});
+  assert.equal(job.status,'saved');assert.equal(job.notes,'');assert(!JSON.stringify(data).includes('must-not-persist'));
+  await assert.rejects(store.update(job.id,{status:'submitted'}),/正式提交/);
+  assert.equal((await store.list())[0].status,'saved');
+  await store.update(job.id,{notes:'演示备注',status:'submitted',confirmedSubmitted:true});
+  const duplicate=await store.save({url:'https://example.com/job?utm_campaign=again&jobId=12#apply',title:'新演示岗位',company:'演示公司',description:'',status:'saved',notes:''});
+  assert.equal(duplicate.id,job.id);assert.equal(duplicate.status,'submitted');assert.equal(duplicate.notes,'演示备注');assert.equal(duplicate.description,'职责：开发演示系统');assert(duplicate.submittedAt);
+  await Promise.all(Array.from({length:12},(_,i)=>store.save({url:`https://example.com/job?jobId=${100+i}`,title:`并发演示岗位 ${i}`})));
+  assert.equal((await store.list()).length,13);
+  await Promise.all([store.update(job.id,{notes:'并发备注'}),store.update(job.id,{company:'并发公司'})]);
+  const merged=(await store.list()).find(row=>row.id===job.id);assert.equal(merged.company,'并发公司');assert.equal(merged.notes,'并发备注');
+  const before=clone(data);fails=true;await assert.rejects(store.update(job.id,{notes:'失败修改'}),/storage unavailable/);assert.deepEqual(data,before);fails=false;
+  await store.update(job.id,{notes:'已恢复',description:'<script>演示文本</script>',status:'interview'});
+  await assert.rejects(store.update(job.id,{status:'submitted',confirmedSubmitted:'true'}),/正式提交/);
+  await assert.rejects(store.update(job.id,{deadline:'2026-02-30'}),/日期/);
+  await assert.rejects(store.update(job.id,{description:'x'.repeat(12001)}),/过长/);
+  await assert.rejects(store.save({url:'https://example.com/job?x=1',title:'测试',source:'unknown'}),/来源/);
+  await assert.rejects(store.update(job.id,{status:'__proto__'}),/状态/);
+  await assert.rejects(store.update(job.id,{title:''}),/岗位名称/);
+  await assert.rejects(store.update('missing',{notes:'test'}),/未找到/);
+  const items=await store.list();assert.equal(A.search(items,'并发公司','interview').length,1);assert.equal(A.search(items,'无匹配').length,0);assert.equal(A.search(items,'演示文本').length,1);
+  const exported=JSON.parse(A.exportJSON(items));assert.equal(exported.applications.length,13);assert(!JSON.stringify(exported).includes('apiKey'));
+  const dangerous={...items[0],title:'=HYPERLINK("https://example.com")',company:'  +SUM(1,2)',notes:'@SUM(2)\n第二行'};
+  const csv=A.exportCSV([dangerous]);assert(csv.startsWith('\uFEFF'));assert(csv.includes('"\'=HYPERLINK(""https://example.com"")"'));assert(csv.includes('"\'+SUM(1,2)"'));assert(csv.includes('"\'@SUM(2)\n第二行"'));
+  const route123=await store.save({url:'https://example.com/#/jobs/123?utm_source=demo&jobId=123',title:'路由岗位123'});
+  const route456=await store.save({url:'https://example.com/#/jobs/456?jobId=456&utm_source=demo',title:'路由岗位456'});
+  assert.notEqual(route123.id,route456.id);
+  const routeAgain=await store.save({url:'https://example.com/#/jobs/123?jobId=123&utm_campaign=again'});assert.equal(routeAgain.id,route123.id);
+  assert.equal((await store.list()).filter(row=>row.title.startsWith('路由岗位')).length,2);
+  assert.throws(()=>A.validateRecord({...job,source:'untrusted'}),/内容异常/);
+  assert.throws(()=>A.validateRecord({...job,description:{bad:'type'}}),/内容异常/);
+  assert.throws(()=>A.exportJSON([{...job,description:'x'.repeat(12001)}]),/内容异常/);
+  assert.throws(()=>A.exportCSV([{...job,updatedAt:1e100}]),/内容异常/);
+  assert.equal(A.validateRecord({...job,profile:{secret:'not allowed'}}).profile,undefined);
+  assert(csv.includes('收藏时间（UTC）'));assert(csv.includes('网页结构化数据'));
+  const countWrites=writes;data[A.STORAGE_KEY]={version:1,applications:Array.from({length:A.MAX_RECORDS},(_,i)=>({...job,id:`limit-${i}`,url:`https://example.com/job?id=${i}`}))};
+  await assert.rejects(store.save({url:'https://example.com/new',title:'超限'}),/最多保存/);assert.equal(writes,countWrites);
+  data[A.STORAGE_KEY]={version:2,applications:[]};await assert.rejects(store.list(),/格式异常/);await assert.rejects(store.save({url:'https://example.com/new',title:'不能覆盖损坏数据'}),/格式异常/);
+  assert.equal(data[A.STORAGE_KEY].version,2);
+  if(process.argv.includes('--browser'))await testBrowser();
+  console.log('PASS applications: URL normalization, secret whitelist, explicit submission, dedup preservation, concurrent serialization, failure recovery, bounds, search, safe exports');
+})().catch(error=>{console.error(error);process.exitCode=1;});
+
+async function testBrowser(){
+  const fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url');
+  const {chromium}=require('playwright'),root=path.resolve(__dirname,'..');
+  const browser=await chromium.launch({headless:true,executablePath:process.env.AUTOFILL_BROWSER_PATH});
+  try{
+    const context=await browser.newContext({viewport:{width:390,height:780}});
+    await context.addInitScript({content:fs.readFileSync(path.join(root,'shared/applications.js'),'utf8')+`
+      let demoData={};
+      const demoStore=QIUZHAO_APPLICATIONS.createStore({get:async()=>structuredClone(demoData),set:async value=>{demoData=structuredClone(value);}});
+      window.__requests=[];
+      window.chrome={runtime:{sendMessage:async message=>{
+        __requests.push(message);
+        try{if(message.type==='APPLICATION_LIST')return {ok:true,applications:await demoStore.list()};
+        if(message.type==='APPLICATION_SAVE')return {ok:true,application:await demoStore.save(message.application)};
+        if(message.type==='APPLICATION_UPDATE')return {ok:true,application:await demoStore.update(message.id,message.patch)};
+        }catch(error){return {ok:false,error:error.message};}
+      }}};
+    `});
+    const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
+    await page.goto(pathToFileURL(path.join(root,'popup/applications.html')).href);
+    await page.locator('#empty').waitFor({state:'visible'});
+    await page.locator('#add-panel summary').click();
+    await page.locator('#add-form [name=url]').fill('https://example.com/job?id=42&utm_source=demo');
+    await page.locator('#add-form [name=title]').fill('演示算法岗位');
+    await page.locator('#add-form [name=company]').fill('演示公司');
+    await page.locator('#add-form [name=description]').fill('<img src=x onerror=alert(1)>演示职责');
+    await page.locator('#add-form button').click();
+    await page.locator('.record').waitFor();
+    assert.equal(await page.locator('.record img').count(),0);
+    assert.equal(await page.locator('.source').textContent(),'来源：手动录入');
+    assert.equal(await page.locator('.job-description p').textContent(),'<img src=x onerror=alert(1)>演示职责');
+    assert.equal(await page.locator('.record a').getAttribute('href'),'https://example.com/job?id=42');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await page.locator('.record details').last().locator('summary').click();
+    await page.locator('.record [name=status]').selectOption('submitted');
+    assert.equal(await page.locator('.check').isVisible(),true);
+    await page.locator('.record button').click();
+    assert.equal(await page.locator('.badge').textContent(),'收藏');
+    assert.equal(await page.evaluate(()=>__requests.filter(row=>row.type==='APPLICATION_UPDATE').length),0);
+    await page.locator('.record [name=confirmedSubmitted]').check();
+    await page.locator('.record [name=notes]').fill('演示笔试安排');
+    await page.locator('.record button').click();
+    await page.waitForFunction(()=>document.querySelector('.badge').textContent==='已投递');
+    assert.equal(await page.locator('.check').isVisible(),false);
+    await page.locator('#search').fill('无匹配');assert.equal(await page.locator('.record').count(),0);
+    await page.locator('#search').fill('演示笔试');assert.equal(await page.locator('.record').count(),1);
+    const downloadPromise=page.waitForEvent('download');await page.locator('#export-csv').click();const downloaded=await downloadPromise;assert(downloaded.suggestedFilename().endsWith('.csv'));
+    assert.deepEqual(errors,[]);
+    console.log('PASS applications browser: mobile layout, manual capture, inert markup, required submission confirmation, editing, search, CSV download');
+  }finally{await browser.close();}
+}

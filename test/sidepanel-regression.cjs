@@ -16,12 +16,13 @@ const root=path.resolve(__dirname,'..');
  const browser=await chromium.launch({headless:true,executablePath:process.env.AUTOFILL_BROWSER_PATH});
  try{
   const page=await browser.newPage({viewport:{width:300,height:750}});
-  await page.addInitScript({content:`window.active=7;window.sent=[];window.chrome={storage:{local:{get:async()=>({profile:{name:'演示姓名'},settings:{}})}},runtime:{getManifest:()=>({version:'1.15.9'}),sendMessage:async()=>({ok:true})},tabs:{query:async()=>[{id:active}],sendMessage:async(id,m)=>{sent.push({id,type:m.type});return m.type==='PING'?{host:'fixture.invalid',contentBuild:'1.15.9-dev'}:{running:false};}}};`});
+  await page.addInitScript({content:`window.active=7;window.sent=[];window.chrome={storage:{local:{get:async()=>({profile:{name:'演示姓名'},settings:{}})}},runtime:{getManifest:()=>({version:'1.16.1'}),sendMessage:async()=>({ok:true,frames:[{frameId:0,host:'fixture.invalid',totalControls:3}]})},tabs:{query:async()=>[{id:active}],sendMessage:async(id,m)=>{sent.push({id,type:m.type});if(m.type==='PREVIEW_FORM')return {previewToken:'demo-preview',totalControls:3,filledControls:0,ruleCandidates:2,aiCandidates:1};return m.type==='PING'?{host:'fixture.invalid',contentBuild:'1.16.1-dev'}:{running:false};}}};`});
   await page.goto(pathToFileURL(path.join(root,'popup/quick.html')).href+'?tabId=7');
   await page.waitForFunction(()=>!document.getElementById('start').disabled);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal overflow in narrow sidebar');
+  await page.locator('#start').click();await page.locator('#preview').waitFor({state:'visible'});
   await page.evaluate(()=>active=8);await page.locator('#start').click();
-  await page.waitForFunction(()=>document.getElementById('message').textContent.includes('未能获取'));
+  await page.waitForFunction(()=>document.getElementById('message').textContent.includes('请回到此侧栏'));
   assert.equal(await page.evaluate(()=>sent.filter(m=>m.type==='FILL_FORM').length),0,'inactive tab must not receive fill');
   assert(await page.evaluate(()=>sent.every(m=>m.id===7)),'polling stays bound to original tab');
   await page.screenshot({path:path.join(root,'test/sidepanel-preview.png')});

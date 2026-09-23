@@ -8,7 +8,7 @@ const write=(file,text)=>{const dest=path.join(temp,file);fs.mkdirSync(path.dirn
 try{
  for(const dir of ['content','shared','popup','background'])fs.mkdirSync(path.join(temp,dir),{recursive:true});
  write('manifest.json','{"version":"0.0.0"}');write('package.json','{}');write('content/demo.js','// fixture\n');
- write('scripts/check-extension.cjs',runner);write('scripts/triage-run-logs.cjs','');write('test/popup-mock-chrome.js','');
+ write('scripts/check-extension.cjs',runner);write('scripts/triage-run-logs.cjs','');write('test/popup-mock-chrome.js','');write('test/extension-fixture.cjs','');
  for(const name of unit.concat(browser))write('test/'+name,'');
  const run=()=>{const p=cp.spawnSync(process.execPath,[path.join(temp,'scripts/check-extension.cjs'),'--unit'],{encoding:'utf8',timeout:30000,windowsHide:true});assert(!p.error,p.error?.message);return {code:p.status,report:JSON.parse(fs.readFileSync(path.join(temp,'artifacts/quality-gate-unit.json'),'utf8'))};};
  write('test/'+unit[0],'throw Error("intentional fixture failure");');

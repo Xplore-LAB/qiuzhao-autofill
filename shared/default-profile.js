@@ -26,7 +26,10 @@
   function createLoader({readFile,hash,keys,validate,storage,commit}) {
     let inFlight=null;
     async function load() {
-      const next=decode(await readFile(),keys,validate),fingerprint=await hash(JSON.stringify(canonical(next)));
+      const text=await readFile();
+      // The optional packaged file must not block profiles created in the manager.
+      if(text===null)return {ok:true,changed:false,source:'storage'};
+      const next=decode(text,keys,validate),fingerprint=await hash(JSON.stringify(canonical(next)));
       const stored=await storage.get(['profile','defaultProfileFileHash']);
       if(stored.defaultProfileFileHash===fingerprint)return {ok:true,changed:false};
       const result=await commit({expected:stored.profile||{},next,checkpoint:true,clearDraft:true,label:'默认资料文件更新',defaultFileHash:fingerprint});
