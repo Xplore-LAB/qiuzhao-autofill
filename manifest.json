@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "秋招网申自动填充助手",
-  "version": "1.16.3",
-  "version_name": "1.16.3-dev（待实页验收）",
+  "version": "1.16.4",
+  "version_name": "1.16.4-dev（待实页验收）",
   "description": "先总览页面字段，再用本地规则和可选 AI 填写网申，支持多条经历、奖励与研究成果。",
   "permissions": ["storage", "contextMenus", "sidePanel"],
   "minimum_chrome_version": "116",

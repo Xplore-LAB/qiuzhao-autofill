@@ -125,7 +125,7 @@ async function selectFrame(id){
   if(id===null){$('site').textContent='请选择要填写的表单区域';return;}
   try{
     const ping=await rpc('PING');if(read!==frameRead)return;
-    if(ping?.contentBuild!=='1.16.3-dev')throw Error('请刷新招聘网页以加载新版插件，再重新识别。');
+    if(ping?.contentBuild!=='1.16.4-dev')throw Error('请刷新招聘网页以加载新版插件，再重新识别。');
     $('site').textContent=(ping.host||'当前网页')+(id?' · 嵌入区域 '+id:'');
     pageReady=true;await refreshProfile();await poll();
   }catch(error){if(read!==frameRead)return;message(error.message||'页面连接失效，请重新识别。',true);}
@@ -216,7 +216,7 @@ async function stop(){
   finally{$('stop').disabled=false;}
 }
 async function init(){
-  $('version').textContent='版本 '+(chrome.runtime.getManifest?.().version||'1.16.3')+' · 待实页验收';
+  $('version').textContent='版本 '+(chrome.runtime.getManifest?.().version||'1.16.4')+' · 待实页验收';
   $('manage').onclick=()=>openManager();$('details').onclick=()=>openManager('logs');$('start').onclick=start;$('stop').onclick=stop;
   $('refresh-page').onclick=discoverPage;
   $('frame-select').onchange=()=>selectFrame($('frame-select').value===''?null:Number($('frame-select').value));

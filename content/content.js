@@ -1,4 +1,4 @@
-/* 秋招网申自动填充助手 - content script v1.16.3-dev
+/* 秋招网申自动填充助手 - content script v1.16.4-dev
  *
  * 职责：
  *   1. 识别页面中的网申表单字段（中文/英文；label / placeholder / aria-label / name 属性多路匹配）
@@ -1380,8 +1380,8 @@
     return Array.from(sel.options).every(opt => opt.selected === selected.has(opt));
   }
 
-  async function verifyControlWrite(el, expected) {
-    await wait(100);
+  async function verifyControlWrite(el, expected, alreadySettled = false) {
+    if (!alreadySettled) await wait(100);
     if (!el.isConnected) return 'control-replaced';
     if (el.validity && !el.validity.valid) return 'validation-rejected';
     if (el.tagName === 'SELECT' && el.multiple) {
@@ -1521,8 +1521,8 @@
     return report;
   }
 
-  function comparePagePosition(a, b) {
-    const ar = a.getBoundingClientRect(), br = b.getBoundingClientRect();
+  function comparePagePosition(a, b, positions) {
+    const ar = positions?.get(a) || a.getBoundingClientRect(), br = positions?.get(b) || b.getBoundingClientRect();
     if (Math.abs(ar.top - br.top) > 4) return ar.top - br.top;
     if (ar.left !== br.left) return ar.left - br.left;
     return a === b ? 0 : (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
@@ -1565,7 +1565,8 @@
     while (pending.length) {
       checkFillRun();
       // Re-read geometry after each committed control, since dependent fields can move.
-      pending.sort((a, b) => comparePagePosition(a.el, b.el));
+      const positions = new Map(pending.map(task => [task.el, task.el.getBoundingClientRect()]));
+      pending.sort((a, b) => comparePagePosition(a.el, b.el, positions));
       const task = pending.shift();
       const range = task.el.closest?.('.ant-picker-range');
       const rangeEnd = range?.querySelectorAll('.ant-picker-input')[1];
@@ -1589,7 +1590,15 @@
       followCurrentField(task.el);
       const before = summary.filled.length;
       const diagnosticsBefore = (summary.diagnostics || []).length;
-      await applyControl(task.el, task.field, task.values, taskOverwrite, summary, {auto:!!(opts && opts.auto)});
+      // Keep one serial post-blur boundary for plain native fields. Widgets,
+      // autocomplete and date inputs retain their own commit protocol.
+      const settleNativeAfterBlur = !!activeFillRun?.selfCheck && !opts?.auto
+        && task.field.type !== 'date' && !isAutocompleteInput(task.el)
+        && !isCustomSelect(task.el) && !isCustomRadioGroup(task.el)
+        && (task.el.tagName === 'TEXTAREA' || (task.el.tagName === 'INPUT'
+          && ['text','email','tel','url','number'].includes(inputType(task.el))))
+        && !task.el.matches('[role="combobox"],[aria-autocomplete],[list]');
+      await applyControl(task.el, task.field, task.values, taskOverwrite, summary, {auto:!!(opts && opts.auto), settleNativeAfterBlur});
       if(typeof traceStep==='function')traceStep('write-result',task.el,task.field,{ok:summary.filled.length>before});
       if (auditRecord) {
         // Only this task's appended diagnostics belong to this exact control.
@@ -1684,7 +1693,15 @@
           ? Array.from(el.options).filter(opt => opt.selected).map(opt => opt.value)
           : el.tagName === 'SELECT' || ['date', 'month', 'datetime-local'].includes(inputType(el))
             ? el.value : values[0];
-        reason = await verifyControlWrite(el, expected);
+        if (opts?.settleNativeAfterBlur) {
+          const written = auditValue(el);
+          if (document.activeElement === el) el.blur();
+          // Input and blur handlers share this window; the next field must not
+          // start before asynchronous linkage has had the same 120 ms boundary.
+          await wait(120);
+          traceStep('blur-check',el,field,{sameAsWritten:written===auditValue(el)});
+        }
+        reason = await verifyControlWrite(el, expected, !!opts?.settleNativeAfterBlur);
         ok = !reason;
       }
     } catch (e) { ok = false; reason = 'execution-error'; }
@@ -2954,7 +2971,7 @@
     const report=!run.automatic && lastSelfCheck && lastSelfCheck.report;
     return {
       startedAt:run.startedAt,durationMs:Date.now()-run.startedAt,host:location.hostname,
-      contentBuild:'1.16.3-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
+      contentBuild:'1.16.4-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
       events:run.events||[],droppedEvents:run.droppedEvents||0,
       trigger:run.automatic?'automatic':'manual',verification:run.automatic?'immediate':report?'final':'incomplete',
       outcome:['fill-cancelled','fill-timeout','fill-error','sensitive-page'].includes(result.note)?result.note:run.finished||run.automatic?'finished':'running',
@@ -3138,7 +3155,7 @@
     if (msg.type === 'PROBE_FORM_FRAMES') {
       const sensitive=hasVisiblePassword();
       chrome.runtime.sendMessage({type:'REPORT_FORM_FRAME',requestId:msg.requestId,
-        frame:{contentBuild:'1.16.3-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
+        frame:{contentBuild:'1.16.4-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
         .then(()=>sendResponse({ok:true}),()=>sendResponse({ok:false}));
       return true;
     }
@@ -3149,7 +3166,7 @@
       el.scrollIntoView({block:'center',behavior:'smooth'});flash(el);sendResponse({ok:true});return;
     }
     if (msg.type === 'PING') {
-      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.3-dev' });
+      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.4-dev' });
       return;
     }
     if (msg.type === 'SCAN_FORM') {
