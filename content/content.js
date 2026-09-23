@@ -1,4 +1,4 @@
-/* 秋招网申自动填充助手 - content script v1.16.4-dev
+/* 秋招网申自动填充助手 - content script v1.16.6-dev
  *
  * 职责：
  *   1. 识别页面中的网申表单字段（中文/英文；label / placeholder / aria-label / name 属性多路匹配）
@@ -207,12 +207,12 @@
   ].join(',');
 
   const FIELD_CONTAINER_SELECTOR = [
-    '.form-item', '.ant-form-item', '.el-form-item', '.arco-form-item', '.ivu-form-item',
+    '.ud-formily-item', '.form-item', '.ant-form-item', '.el-form-item', '.arco-form-item', '.ivu-form-item',
     '.form-group', '.field-row', '.field-item', '[data-field]', '[data-testid*="field"]'
   ].join(',');
 
   const FIELD_LABEL_SELECTOR = [
-    '.form-item__text', '.ant-form-item-label', '.el-form-item__label', '.arco-form-item-label',
+    '.ud-formily-item-label', '.form-item__text', '.ant-form-item-label', '.el-form-item__label', '.arco-form-item-label',
     '.ivu-form-item-label', '.control-label', '.form-label', '.field-label', 'legend', 'label'
   ].join(',');
 
@@ -410,12 +410,14 @@
     push(el.getAttribute('placeholder'), 5);
     push(el.getAttribute('data-label'), 8);
     push(el.getAttribute('data-field-label'), 8);
+    push(el.getAttribute('data-form-field-i18n-name'), 10);
     push(el.getAttribute('autocomplete'), 4);
 
     const fieldContainer = el.closest && el.closest(FIELD_CONTAINER_SELECTOR);
     if (fieldContainer) {
       push(fieldContainer.getAttribute('data-label'), 9);
       push(fieldContainer.getAttribute('data-field-label'), 9);
+      push(fieldContainer.getAttribute('data-form-field-i18n-name'), 10);
       const labels = fieldContainer.querySelectorAll(FIELD_LABEL_SELECTOR);
       let added = 0;
       for (const label of labels) {
@@ -1483,10 +1485,16 @@
     const records = activeFillRun.auditRecords || [];
     const hadOpenChoices=visibleChoiceLayers().length>0;
     await dismissVisibleChoiceLayers();
-    // Plain native fields have already passed the five-second settlement window.
+    // Plain native fields have already passed their shorter settlement window.
     // Keep the extra UI-settle delay only for widgets that can commit after closing.
     const needsComponentSettle=hadOpenChoices||records.some(r=>isCustomSelect(r.el)||isCustomRadioGroup(r.el)||r.el.closest?.('.ant-picker,.el-date-editor,.arco-picker,.phoenix-datepicker'));
-    if(needsComponentSettle)await wait(800);
+    // A complete, unchanged five-second observation already covers component
+    // settling. Closing a newly open layer or any changed/replaced control
+    // invalidates that evidence; retain the original fallback delay in that case.
+    const observed = activeFillRun.settledControls;
+    const canReuseSettlement = !hadOpenChoices && observed && records.length
+      && records.every(r=>r.el.isConnected && observed.has(r.el) && observed.get(r.el)===auditValue(r.el));
+    if(needsComponentSettle && !canReuseSettlement)await wait(800);
     const initial = new Map(records.map(r => [r.el, auditValue(r.el)]));
     await wait(400);
     const targets = new Map(), items = [], seen = new Set();
@@ -2944,13 +2952,22 @@
     const records=(run.auditRecords||[]).filter(record=>record.verified&&!record.skipped);
     // Native text writes are read back immediately and need only one quiet-window sample.
     // Stateful widgets keep the three delayed checks because their visual value can lag commit.
-    const delays=records.some(requiresLongSettlement)?[500,1500,3000]:[450];
+    const longObservation=records.some(requiresLongSettlement);
+    const delays=longObservation?[500,1500,3000]:[450];
+    // Only in-memory evidence; never serialize these values into run logs.
+    // Include skipped/failed records too: final verification examines all of them.
+    const stable=new Map((run.auditRecords||[]).map(r=>[r.el,auditValue(r.el)]));
+    run.settledControls=null;
     for(const delay of delays){
       await wait(delay);
+      for(const [el,value] of stable){
+        if(!el.isConnected || auditValue(el)!==value)stable.delete(el);
+      }
       for(const r of records){
         traceStep('settlement-check',r.el,r.field,{sameAsWritten:r.after===auditValue(r.el),previousVerified:r.verified});
       }
     }
+    if(longObservation)run.settledControls=stable;
   }
 
   async function runAutoFill(){
@@ -2971,7 +2988,7 @@
     const report=!run.automatic && lastSelfCheck && lastSelfCheck.report;
     return {
       startedAt:run.startedAt,durationMs:Date.now()-run.startedAt,host:location.hostname,
-      contentBuild:'1.16.4-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
+      contentBuild:'1.16.6-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
       events:run.events||[],droppedEvents:run.droppedEvents||0,
       trigger:run.automatic?'automatic':'manual',verification:run.automatic?'immediate':report?'final':'incomplete',
       outcome:['fill-cancelled','fill-timeout','fill-error','sensitive-page'].includes(result.note)?result.note:run.finished||run.automatic?'finished':'running',
@@ -3155,7 +3172,7 @@
     if (msg.type === 'PROBE_FORM_FRAMES') {
       const sensitive=hasVisiblePassword();
       chrome.runtime.sendMessage({type:'REPORT_FORM_FRAME',requestId:msg.requestId,
-        frame:{contentBuild:'1.16.4-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
+        frame:{contentBuild:'1.16.6-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
         .then(()=>sendResponse({ok:true}),()=>sendResponse({ok:false}));
       return true;
     }
@@ -3166,7 +3183,7 @@
       el.scrollIntoView({block:'center',behavior:'smooth'});flash(el);sendResponse({ok:true});return;
     }
     if (msg.type === 'PING') {
-      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.4-dev' });
+      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.6-dev' });
       return;
     }
     if (msg.type === 'SCAN_FORM') {

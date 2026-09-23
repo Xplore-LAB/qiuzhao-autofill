@@ -13,7 +13,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'u
 const popupHarness = fs.readFileSync(path.join(root, 'test/popup-ui-harness.html'), 'utf8');
 const popupMock = fs.readFileSync(path.join(root, 'test/popup-mock-chrome.js'), 'utf8');
 
-assert.equal(manifest.version, '1.16.4');
+assert.equal(manifest.version, '1.16.6');
 assert.ok(manifest.content_scripts[0].js.includes('shared/site-observations.js'), 'site observation module must load before content logic');
 assert.ok(popupHtml.includes('v'+manifest.version+'-dev'),'popup version mismatch');
 assert.ok(popupHtml.includes('id="siteObservationList"'), 'site observation manager view missing');
