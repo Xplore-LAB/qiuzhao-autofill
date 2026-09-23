@@ -1,4 +1,4 @@
-/* 秋招网申自动填充助手 - content script v1.16.6-dev
+/* 秋招网申自动填充助手 - content script v1.16.10-dev
  *
  * 职责：
  *   1. 识别页面中的网申表单字段（中文/英文；label / placeholder / aria-label / name 属性多路匹配）
@@ -34,6 +34,7 @@
     { key: 'languageSpeaking', label: '听说能力', type: 'choice', scope: /语言能力/, patterns: [/听说能力/] },
     { key: 'languageWriting', label: '读写能力', type: 'choice', scope: /语言能力/, patterns: [/读写能力/] },
     { key: 'internshipAchievement', label: '工作业绩', scope: /实习经历/, patterns: [/工作业绩/] },
+    { key: 'projectUrl', label: '项目链接', scope: /项目经历/, patterns: [/^项目链接$/] },
     { key: 'projectRole', label: '项目职务', scope: /项目经历/, patterns: [/^职务$|项目职务/] },
     { key: 'projectResponsibility', label: '项目职责', scope: /项目经历/, patterns: [/项目职责/] },
     { key: 'researchChannel', label: '发布渠道', scope: /论文|研究成果/, patterns: [/发布渠道|发表刊物/] },
@@ -47,6 +48,7 @@
     { key: 'competitionDate', label: '竞赛获奖时间', type: 'date', scope: /竞赛获奖/, patterns: [/竞赛获奖时间/] },
     { key: 'honorName', label: '荣誉名称', scope: /其他荣誉/, patterns: [/荣誉名称/] },
     { key: 'workName', label: '作品名称', scope: /作品信息/, patterns: [/作品名称/] },
+    { key: 'workDescription', label: '作品描述', scope: /作品/, patterns: [/作品描述/] },
     { key: 'workUrl', label: '作品链接', scope: /作品信息/, patterns: [/作品链接/] },
     { key: 'recommendationCode', label: '推荐码', multi: true, patterns: [/^推荐码$|内推码|推荐人编码|邀请码/, /referralcode|invitecode/] },
     { key: 'familyName', label: '姓', patterns: [/姓氏/, /^姓$/, /lastname|surname|familyname/] },
@@ -97,6 +99,7 @@
     { key: 'educationDegree', label: '教育经历学历', type: 'choice', fallbackKeys: ['degree'], patterns: [/^学历$|学历层次|教育程度/] },
     { key: 'educationDiscipline', label: '教育经历学科', type: 'choice', scope: /教育经历|applicanteducation/, patterns: [/^学科$|教育经历学科|学科门类/] },
     { key: 'academicDegree', label: '学位', type: 'choice', patterns: [/^学位$|学位名称|获得学位/] },
+    { key: 'educationType', label: '学历类型', type: 'choice', patterns: [/^学历类型$/] },
     { key: 'trainingMethod', label: '培养方式', type: 'choice', patterns: [/培养方式|培养类型|学习形式/] },
     { key: 'unifiedRecruitment', label: '是否统招', type: 'choice', scope: /教育经历|applicanteducation/, patterns: [/是否统招|统招/], options: { '是': ['是', 'yes'], '否': ['否', 'no'] } },
     { key: 'overseasEducation', label: '是否海外留学', type: 'choice', scope: /教育经历|applicanteducation/, patterns: [/是否为海外留学经历|是否海外留学|海外留学经历/], options: { '是': ['是', 'yes'], '否': ['否', 'no'] } },
@@ -144,15 +147,15 @@
     {bulkKey: 'certificatesBulk', label: '技能证书', primaryKey: 'certificateName', fieldKeys: ['certificateName'], aliases: {技能证书: 'certificateName'}},
     {bulkKey: 'competitionsBulk', label: '竞赛获奖', primaryKey: 'competitionName', fieldKeys: ['competitionName', 'competitionLevel', 'competitionDate'], aliases: {竞赛名称: 'competitionName', 竞赛获奖等级: 'competitionLevel', 竞赛获奖时间: 'competitionDate'}},
     {bulkKey: 'honorsBulk', label: '其他荣誉', primaryKey: 'honorName', fieldKeys: ['honorName'], aliases: {荣誉名称: 'honorName'}},
-    {bulkKey: 'worksBulk', label: '作品信息', primaryKey: 'workName', fieldKeys: ['workName', 'workUrl'], aliases: {作品名称: 'workName', 作品链接: 'workUrl'}},
+    {bulkKey: 'worksBulk', label: '作品信息', primaryKey: 'workName', fieldKeys: ['workName', 'workUrl', 'workDescription'], aliases: {作品名称: 'workName', 作品链接: 'workUrl', 作品描述: 'workDescription', 描述: 'workDescription'}},
     {
       bulkKey: 'educationBulk', label: '教育经历', primaryKey: 'educationSchool',
-      fieldKeys: ['educationCollege', 'educationLab', 'educationMentor', 'educationSchool', 'educationMajor', 'educationStartDate', 'educationEndDate', 'educationDegree', 'educationDiscipline', 'academicDegree', 'trainingMethod', 'educationRank', 'unifiedRecruitment', 'overseasEducation'],
+      fieldKeys: ['educationCollege', 'educationLab', 'educationMentor', 'educationSchool', 'educationMajor', 'educationStartDate', 'educationEndDate', 'educationDegree', 'educationDiscipline', 'academicDegree', 'educationType', 'trainingMethod', 'educationRank', 'unifiedRecruitment', 'overseasEducation'],
       aliases: { 学院: 'educationCollege', 实验室: 'educationLab', 导师姓名: 'educationMentor',
         学校: 'educationSchool', 学校名称: 'educationSchool', 院校: 'educationSchool', 院校名称: 'educationSchool',
         专业: 'educationMajor', 专业名称: 'educationMajor', 开始时间: 'educationStartDate', 入学时间: 'educationStartDate',
         结束时间: 'educationEndDate', 毕业时间: 'educationEndDate', 学历: 'educationDegree', 学科: 'educationDiscipline',
-        学位: 'academicDegree', 培养方式: 'trainingMethod', 专业排名: 'educationRank', 是否统招: 'unifiedRecruitment',
+        学位: 'academicDegree', 学历类型: 'educationType', 培养方式: 'trainingMethod', 专业排名: 'educationRank', 是否统招: 'unifiedRecruitment',
         是否海外留学: 'overseasEducation', 是否为海外留学经历: 'overseasEducation'
       }, timeKeys: ['educationStartDate', 'educationEndDate']
     },
@@ -163,8 +166,8 @@
     },
     {
       bulkKey: 'projectsBulk', label: '项目经历', primaryKey: 'projectName',
-      fieldKeys: ['projectRole', 'projectResponsibility', 'projectName', 'projectStartDate', 'projectEndDate', 'projectDescription'],
-      aliases: { 项目职务: 'projectRole', 项目职责: 'projectResponsibility',  项目: 'projectName', 项目名称: 'projectName', 项目经历名称: 'projectName', 开始时间: 'projectStartDate', 结束时间: 'projectEndDate', 项目描述: 'projectDescription', 项目经历描述: 'projectDescription', 描述: 'projectDescription', 内容: 'projectDescription' },
+      fieldKeys: ['projectUrl', 'projectRole', 'projectResponsibility', 'projectName', 'projectStartDate', 'projectEndDate', 'projectDescription'],
+      aliases: { 项目链接: 'projectUrl', 项目职务: 'projectRole', 项目职责: 'projectResponsibility',  项目: 'projectName', 项目名称: 'projectName', 项目经历名称: 'projectName', 开始时间: 'projectStartDate', 结束时间: 'projectEndDate', 项目描述: 'projectDescription', 项目经历描述: 'projectDescription', 描述: 'projectDescription', 内容: 'projectDescription' },
       timeKeys: ['projectStartDate', 'projectEndDate']
     },
     {
@@ -188,7 +191,7 @@
   const CUSTOM_SELECT_SELECTOR = [
     '.ant-picker-range .ant-picker-input',
     '.ant-picker:not(.ant-picker-range)',
-    '.phoenix-select', '.ant-select', '.el-select', '.arco-select', '.ivu-select',
+    '.ud__select:has(.ud__select__selector)', '.phoenix-select', '.ant-select', '.el-select', '.arco-select', '.ivu-select',
     '.ant-cascader', '.el-cascader', '.arco-cascader', '.ivu-cascader',
     '.select2-container', 'div[role="combobox"]', 'span[role="combobox"]',
     '[role="combobox"][aria-haspopup="listbox"]'
@@ -202,7 +205,7 @@
   const CUSTOM_CONTROL_SELECTOR = CUSTOM_SELECT_SELECTOR + ',' + CUSTOM_RADIO_SELECTOR;
 
   const AUTOCOMPLETE_CONTAINER_SELECTOR = [
-    '.phoenix-auto-complete-container', '.ant-select-auto-complete', '.el-autocomplete',
+    '.ud__select', '.phoenix-auto-complete-container', '.ant-select-auto-complete', '.el-autocomplete',
     '.arco-auto-complete', '[data-autocomplete]', '[role="combobox"]'
   ].join(',');
 
@@ -402,6 +405,11 @@
         const node = document.getElementById(id);
         if (node) push(node.textContent, 10);
       }
+    }
+    const udRange = el.closest('.throne-biz-date-range-picker-wrapper');
+    if (udRange) {
+      const dates=Array.from(udRange.querySelectorAll('.throne-biz-date-range-picker-input input'));
+      if(dates.length===2 && dates.includes(el))push(dates.indexOf(el)===0?'开始时间':'结束时间',11);
     }
     const wrap = el.closest('label');
     if (wrap) push(wrap.textContent, 8);
@@ -646,7 +654,7 @@
       '.phoenix-select__singleValue', '.phoenix-select__multiValue', '.phoenix-select__value',
       '.phoenix-select__tipEle', '.phoenix-select__placeHolder:not(.phoenix-select__placeHolder--show)',
       '[class*="calcEle"]', 'input:not([type="hidden"])', 'textarea',
-      '.ant-select-selection-item', '.el-select__selected-item', '.el-select__tags-text',
+      '.ud__select__selector__selectItem', '.ud__select__selector__tag .ud__tag__content', '.ant-select-selection-item', '.el-select__selected-item', '.el-select__tags-text',
       '.arco-select-view-value', '.arco-select-view-tag', '.ivu-select-selected-value',
       '.select2-selection__rendered', '[aria-checked="true"]', 'input[type="radio"]:checked',
       '.phoenix-radio--checked', '.phoenix-radio-group__radioItem--checked', '.ant-radio-wrapper-checked',
@@ -685,7 +693,7 @@
 
   function visibleChoiceLayers() {
     const selector = [
-      '.common-unmodeled-layer', '.ant-select-dropdown', '.el-select-dropdown',
+      '.ud__select__dropdown', '.common-unmodeled-layer', '.ant-select-dropdown', '.el-select-dropdown',
       '.arco-select-popup', '.ivu-select-dropdown', '.select2-dropdown',
       '.ant-picker-dropdown', '.el-picker-panel', '.arco-picker-container', '.ivu-date-picker-rel',
       '.phoenix-date-picker', '.phoenix-auto-complete-list', '.el-autocomplete-suggestion',
@@ -707,7 +715,7 @@
   }
 
   const OPTION_SELECTOR = [
-    '.phoenix-selectList__listItem', '.list-item-container', '[role="option"]',
+    '.ud__tree__node', '.ud__select__list__item', '.phoenix-selectList__listItem', '.list-item-container', '[role="option"]',
     '.phoenix-auto-complete-list__item', '.phoenix-auto-complete__item',
     '.ant-select-item-option', '.el-select-dropdown__item', '.arco-select-option',
     '.ivu-select-item', '.select2-results__option', '.ant-cascader-menu-item',
@@ -739,10 +747,12 @@
 
   function optionClickTarget(option) {
     if (!option || !option.querySelectorAll) return option;
+    const udCheckbox=option.querySelector('.ud__checkbox');
+    if(udCheckbox && isVisible(udCheckbox) && !udCheckbox.querySelector('input:disabled,[aria-disabled="true"]'))return udCheckbox;
     const icon = option.querySelector('.icon-container svg');
     if (icon && isVisible(icon)) return icon;
     // A visible row can wrap an actual radio/checkbox or a child label with its own handler.
-    const targets = Array.from(option.querySelectorAll('input[type="radio"],input[type="checkbox"],[role="radio"],[role="checkbox"],.icon-container,.ant-select-item-option-content,.el-cascader-node__label'));
+    const targets = Array.from(option.querySelectorAll('input[type="radio"],input[type="checkbox"],[role="radio"],[role="checkbox"],.icon-container,.ant-select-item-option-content,.el-cascader-node__label,.ud__tree__node__label'));
     return targets.find(el => isVisible(el) && !el.disabled && el.getAttribute('aria-disabled') !== 'true') || option;
   }
 
@@ -1189,7 +1199,7 @@
         trigger.click();
         anchor.querySelector('input')?.focus({preventScroll:true});
       } finally {programmaticFill=false;}
-    } else if (!safeCustomClick(anchor)) return false;
+    } else if (!safeCustomClick(anchor.matches('.ud__select') ? anchor.querySelector('.ud__select__selector') : anchor)) return false;
     if (antSelect) await waitForControlState(() => !!ownedChoiceLayer(anchor, visibleChoiceLayers()), 960);
     else await wait(140);
 
@@ -1275,9 +1285,15 @@
     const path = [];
     try {
       for (let depth = 0; depth < 6; depth++) {
-        const items = Array.from(layer.querySelectorAll('.area-data-container .area-item-container')).filter(isVisible);
-        const matches = items.map(el => ({ el, label: String(el.querySelector('.area-text-label')?.textContent || '').trim() }))
-          .filter(item => item.label && remaining.startsWith(item.label));
+        let matches=[];
+        // A parent can disappear before the next level's network response arrives.
+        for(let attempt=0;attempt<20;attempt++){
+          const items=Array.from(layer.querySelectorAll('.area-data-container .area-item-container')).filter(isVisible);
+          matches=items.map(el=>({el,label:String(el.querySelector('.area-text-label')?.textContent||'').trim()}))
+            .filter(item=>item.label && remaining.startsWith(item.label));
+          if(matches.length)break;
+          await wait(80);
+        }
         matches.sort((a, b) => b.label.length - a.label.length);
         if (!matches.length) return false;
         const match = matches[0];
@@ -1338,8 +1354,26 @@
   }
 
   async function fillAutocomplete(input, value, field, opts) {
+    const phoenix=!!input.closest('.phoenix-auto-complete-container');
+    if(phoenix && !(opts && opts.auto) && !await dismissVisibleChoiceLayers())return false;
     setNativeValue(input, value);
     if (opts && opts.auto) return true;
+    if(phoenix){
+      // Remote school suggestions may arrive after blur. Wait for a matching
+      // candidate, then finish this input's popup before starting the next field.
+      const ready=await waitForChoiceOption(input,valueCandidates(field,value),false,new Set());
+      const layer=ready?.layer || ownedChoiceLayer(input,visibleChoiceLayers());
+      if(ready){safeCustomClick(optionClickTarget(ready.best.el),true);await wait(80);}
+      if(document.activeElement===input)input.blur();
+      if(layer && isVisible(layer)){
+        // Observed Phoenix outside-mousedown contract: use this field's inert
+        // label, never arbitrary page actions or another control's candidate.
+        const label=input.closest('.form-item')?.querySelector('.form-item__text');
+        if(!label || !safeCustomClick(label,true))return false;
+        await waitForControlState(()=>!isVisible(layer),400);
+      }
+      return input.isConnected && input.value===String(value) && !visibleChoiceLayers().length;
+    }
     await wait(180);
     const layers = visibleChoiceLayers();
     const layer = layers[layers.length - 1];
@@ -1469,6 +1503,10 @@
   }
 
   function customDateMatchesTarget(el,value){
+    if(el.matches?.('.ud__picker-input[placeholder="YYYY"]')) {
+      const target=String(value).match(/^(\d{4})(?:[-年/.]\d{1,2}(?:[-月/.]\d{1,2})?)?$/);
+      return !!target && +target[1]>0 && String(el.value||'').trim()===target[1];
+    }
     const parts=text=>{
       const result=String(text||'').trim().match(/^(\d{4})\s*[-年/.]\s*(\d{1,2})(?:\s*[-月/.]\s*(\d{1,2}))?\s*[月日]?$/);
       if(!result || +result[1]<1 || +result[2]<1 || +result[2]>12)return null;
@@ -1663,6 +1701,8 @@
     if (!Array.isArray(values)) values = [values];
     values = values.map(v => String(v == null ? '' : v).trim()).filter(Boolean);
     if (!values.length) return;
+    if(field.type==='date' && el.matches?.('.ud__picker-input[placeholder="YYYY"]'))
+      values=values.map(value=>/^\d{4}(?:[-年/.]\d{1,2}(?:[-月/.]\d{1,2})?)?$/.test(value)?value.slice(0,4):value);
 
     if (opts && opts.plan) {
       opts.plan.push({el, field, values});
@@ -1849,15 +1889,15 @@
     const titles = new Set([group._scopeTitle || group.label].map(normalize));
     if(!group._scopeTitle && typeof activeFillRun!=='undefined')
       for(const section of activeFillRun?.pageSections||[])if(section.category===group.bulkKey && section.root.isConnected)titles.add(normalize(section.title));
-    const aliases = {awardsBulk:['竞赛获奖','其他荣誉'],researchBulk:['论文','科研成果'],educationBulk:['教育背景']};
+    const aliases = {worksBulk:['作品'],awardsBulk:['获奖','竞赛获奖','其他荣誉'],researchBulk:['论文','科研成果'],educationBulk:['教育背景']};
     if(!group._scopeTitle)for (const label of aliases[group.bulkKey] || []) titles.add(normalize(label));
     const found=[];
-    for (const heading of document.querySelectorAll('h2,h3,h4,legend,[role="heading"]')) {
+    for (const heading of document.querySelectorAll('h2,h3,h4,legend,[role="heading"],.applyFormModuleWrapper-left')) {
       if (!isVisible(heading) || !titles.has(normalize(heading.textContent))) continue;
       let root=heading.parentElement;
       for(let depth=0;root && depth<4;depth++,root=root.parentElement){
         if(root.matches('form,body,html'))break;
-        const headings=Array.from(root.querySelectorAll('h2,h3,h4,legend,[role="heading"]')).filter(isVisible);
+        const headings=Array.from(root.querySelectorAll('h2,h3,h4,legend,[role="heading"],.applyFormModuleWrapper-left')).filter(isVisible);
         if(headings.length>1)break;
         const buttons=Array.from(root.querySelectorAll('button,[role="button"]')).filter(b=>isVisible(b)&&!b.disabled&&/^(添加|新增|增加)$/.test(normalize(b.textContent)));
         if(buttons.length===1){found.push({root,add:buttons[0],title:heading.textContent.trim()});break;}
@@ -1927,7 +1967,7 @@
     if (!root) return [];
     // The verified section boundary provides scope even if site-generated IDs vary.
     const scopedField = Object.assign({}, field, {scope:null});
-    const aliases={educationSchool:/^学校$/,educationMajor:/^专业$/,educationRank:/^成绩排名$/,internshipCompany:/^公司$/,internshipRole:/^职位名称$/,internshipContent:/^职责描述$/,researchName:/^论文标题$|^论文名称$|^标题$/,awardName:/^名称$|^奖项$|^竞赛名称$|^荣誉名称$/,awardLevel:/^竞赛获奖等级$/,awardDate:/^竞赛获奖时间$/};
+    const aliases={educationSchool:/^学校$/,educationMajor:/^专业$/,educationRank:/^成绩排名$/,internshipCompany:/^公司$/,internshipRole:/^职位名称$/,internshipContent:/^职责描述$|^描述$/,projectDescription:/^描述$/,projectRole:/^项目角色$/,languageType:/^语言$/,languageProficiency:/^精通程度$/,researchName:/^论文标题$|^论文名称$|^标题$/,awardName:/^名称$|^奖项$|^竞赛名称$|^荣誉名称$/,awardLevel:/^竞赛获奖等级$/,awardDate:/^竞赛获奖时间$/,awardDescription:/^描述$/,workDescription:/^描述$/};
     if(aliases[field.key])scopedField.patterns=[aliases[field.key],...field.patterns];
     const source = controls || collectControls(true);
     const textMap = texts || new Map(source.map(el => [el, getTextCandidates(el)]));
@@ -1936,8 +1976,19 @@
       .sort((a, b) => a === b ? 0 : (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
   }
 
+  function repeatPrimaryField(group) {
+    const primary=FIELDS.find(item=>item.key===group.primaryKey);
+    // Some work sections have links and attachments, but no name input.
+    // Use the observed link only as the row anchor; never write a name into it.
+    if(group.bulkKey==='worksBulk' && primary && !repeatMatchingControls(group,primary).length){
+      const link=FIELDS.find(item=>item.key==='workUrl');
+      if(link && repeatMatchingControls(group,link).length)return link;
+    }
+    return primary;
+  }
+
   function repeatControlCount(group) {
-    const field = FIELDS.find(item => item.key === group.primaryKey);
+    const field = group.bulkKey==='worksBulk' ? repeatPrimaryField(group) : FIELDS.find(item=>item.key===group.primaryKey);
     if (!field) return 0;
     return repeatMatchingControls(group, field).length;
   }
@@ -2040,7 +2091,7 @@
       const root=repeatSectionRoot(group);controls.filter(el=>root?.contains(el)).forEach(el=>used.add(el));
       summary.failed.push(group.label+'（区块需核对）');return;
     }
-    const primaryField = fieldByKey[group.primaryKey];
+    const primaryField = group.bulkKey==='worksBulk' ? repeatPrimaryField(group) : fieldByKey[group.primaryKey];
     const primaries = primaryField ? repeatMatchingControls(group, primaryField, controls, texts) : [];
     if(!primaries.length){
       const root=repeatSectionRoot(group);
@@ -2988,7 +3039,7 @@
     const report=!run.automatic && lastSelfCheck && lastSelfCheck.report;
     return {
       startedAt:run.startedAt,durationMs:Date.now()-run.startedAt,host:location.hostname,
-      contentBuild:'1.16.6-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
+      contentBuild:'1.16.10-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
       events:run.events||[],droppedEvents:run.droppedEvents||0,
       trigger:run.automatic?'automatic':'manual',verification:run.automatic?'immediate':report?'final':'incomplete',
       outcome:['fill-cancelled','fill-timeout','fill-error','sensitive-page'].includes(result.note)?result.note:run.finished||run.automatic?'finished':'running',
@@ -3005,12 +3056,12 @@
 
   function observePlanSections() {
     const sections=[];
-    for(const heading of document.querySelectorAll('h2,h3,h4,legend,[role="heading"]')) {
+    for(const heading of document.querySelectorAll('h2,h3,h4,legend,[role="heading"],.applyFormModuleWrapper-left')) {
       if(!isVisible(heading))continue;
       let root=heading.parentElement;
       for(let depth=0;root && depth<4;depth++,root=root.parentElement) {
         if(root.matches('form,body,html'))break;
-        if(Array.from(root.querySelectorAll('h2,h3,h4,legend,[role="heading"]')).filter(isVisible).length>1)break;
+        if(Array.from(root.querySelectorAll('h2,h3,h4,legend,[role="heading"],.applyFormModuleWrapper-left')).filter(isVisible).length>1)break;
         const adds=Array.from(root.querySelectorAll('button,[role="button"]')).filter(el=>isVisible(el)&&!el.disabled&&/^(添加|新增|增加)$/.test(normalize(el.textContent)));
         if(adds.length===1) {sections.push({id:String(sections.length),title:heading.textContent.trim(),root,add:adds[0]});break;}
       }
@@ -3172,7 +3223,7 @@
     if (msg.type === 'PROBE_FORM_FRAMES') {
       const sensitive=hasVisiblePassword();
       chrome.runtime.sendMessage({type:'REPORT_FORM_FRAME',requestId:msg.requestId,
-        frame:{contentBuild:'1.16.6-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
+        frame:{contentBuild:'1.16.10-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
         .then(()=>sendResponse({ok:true}),()=>sendResponse({ok:false}));
       return true;
     }
@@ -3183,7 +3234,7 @@
       el.scrollIntoView({block:'center',behavior:'smooth'});flash(el);sendResponse({ok:true});return;
     }
     if (msg.type === 'PING') {
-      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.6-dev' });
+      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.10-dev' });
       return;
     }
     if (msg.type === 'SCAN_FORM') {

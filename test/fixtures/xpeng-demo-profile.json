@@ -1,0 +1,258 @@
+{
+  "app": "qiuzhao-autofill",
+  "kind": "structured-profile",
+  "schemaVersion": 1,
+  "note": "固定小鹏实页演示资料，按已观察选项设置，不代表用户。保留账号手机号；不得自动保存或提交。",
+  "profile": {
+    "name": "演示测试用户",
+    "gender": "男",
+    "birthDate": "2000-01-01",
+    "phone": "13800000000",
+    "email": "autofill-demo@example.com",
+    "school": "浙江大学",
+    "major": "计算机科学与技术",
+    "degree": "本科",
+    "graduationDate": "2026-06",
+    "rank": "前20%",
+    "recruitmentSource": "校园就业网",
+    "educationBulk": [
+      {
+        "educationSchool": "演示高级中学",
+        "educationMajor": "理科",
+        "educationStartDate": "2019-09",
+        "educationEndDate": "2022-06",
+        "educationDegree": "高中",
+        "trainingMethod": "非定向（统招、并轨）",
+        "educationRank": "前20%",
+        "unifiedRecruitment": "是",
+        "overseasEducation": "否",
+        "educationType": "统招全日制"
+      },
+      {
+        "educationSchool": "浙江大学",
+        "educationMajor": "计算机科学与技术",
+        "educationStartDate": "2022-09",
+        "educationEndDate": "2026-06",
+        "educationDegree": "本科",
+        "educationRank": "前20%",
+        "educationCollege": "计算机科学与技术学院",
+        "educationLab": "演示软件实验室",
+        "educationMentor": "演示导师",
+        "educationDiscipline": "工学",
+        "academicDegree": "学士",
+        "trainingMethod": "非定向（统招、并轨）",
+        "unifiedRecruitment": "是",
+        "overseasEducation": "否",
+        "educationType": "统招全日制"
+      },
+      {
+        "educationSchool": "北京大学",
+        "educationMajor": "计算机科学与技术",
+        "educationStartDate": "2026-09",
+        "educationEndDate": "2029-06",
+        "educationDegree": "硕士",
+        "educationRank": "前20%",
+        "educationCollege": "计算机科学与技术学院",
+        "educationLab": "演示智能系统实验室",
+        "educationMentor": "示例导师",
+        "educationDiscipline": "工学",
+        "academicDegree": "硕士",
+        "trainingMethod": "非定向（统招、并轨）",
+        "unifiedRecruitment": "是",
+        "overseasEducation": "否",
+        "educationType": "统招全日制"
+      }
+    ],
+    "internshipsBulk": [
+      {
+        "internshipCompany": "演示测试科技公司",
+        "internshipRole": "软件开发实习生",
+        "internshipStartDate": "2025-07",
+        "internshipEndDate": "2025-09",
+        "internshipContent": "固定演示经历：参与功能开发、接口测试和文档整理，仅用于表单测试。",
+        "internshipAchievement": "仅用于测试：完成 12 个演示用例。"
+      },
+      {
+        "internshipCompany": "第二演示科技公司",
+        "internshipRole": "测试开发实习生",
+        "internshipStartDate": "2026-01",
+        "internshipEndDate": "2026-03",
+        "internshipContent": "固定演示经历：参与功能开发、接口测试和文档整理，仅用于表单测试。",
+        "internshipAchievement": "仅用于测试：完成 12 个演示用例。"
+      }
+    ],
+    "projectsBulk": [
+      {
+        "projectName": "演示表单测试项目",
+        "projectStartDate": "2025-03",
+        "projectEndDate": "2025-06",
+        "projectDescription": "固定演示项目：实现字段识别、结果核验和测试报告，不代表真实经历。",
+        "projectRole": "演示开发负责人",
+        "projectResponsibility": "固定模拟资料：负责字段匹配与自动化测试。",
+        "projectUrl": "https://example.com/demo-project-1"
+      },
+      {
+        "projectName": "第二演示多经历项目",
+        "projectStartDate": "2026-02",
+        "projectEndDate": "2026-04",
+        "projectDescription": "固定演示项目：实现字段识别、结果核验和测试报告，不代表真实经历。",
+        "projectRole": "演示开发负责人",
+        "projectResponsibility": "固定模拟资料：负责字段匹配与自动化测试。",
+        "projectUrl": "https://example.com/demo-project-2"
+      }
+    ],
+    "researchBulk": [
+      {
+        "researchName": "演示论文：网页表单识别方法测试",
+        "researchChannel": "演示测试渠道（未真实发表）",
+        "researchAuthorOrder": "一作",
+        "researchUrl": "https://example.com/demo-paper",
+        "researchDate": "2025-05",
+        "researchLevel": "校级（模拟）",
+        "researchDescription": "固定演示研究记录，不代表真实发表或成果。"
+      }
+    ],
+    "languagesBulk": [
+      {
+        "languageType": "英语",
+        "languageSpeaking": "熟悉",
+        "languageWriting": "良好",
+        "languageProficiency": "商务会话"
+      },
+      {
+        "languageType": "日语",
+        "languageSpeaking": "一般",
+        "languageWriting": "一般",
+        "languageProficiency": "入门"
+      }
+    ],
+    "awardsBulk": [
+      {
+        "awardName": "演示创新竞赛一等奖（模拟）",
+        "awardDate": "2025-05",
+        "awardLevel": "院校级",
+        "awardDescription": "固定测试记录，不代表真实获奖。"
+      },
+      {
+        "awardName": "演示优秀学生奖学金（模拟）",
+        "awardDate": "2026-04",
+        "awardLevel": "院校级",
+        "awardDescription": "第二条固定测试记录，不代表真实获奖。"
+      }
+    ],
+    "customs": [
+      {
+        "label": "国家地区",
+        "value": "中国"
+      },
+      {
+        "label": "现居地",
+        "value": "杭州"
+      },
+      {
+        "label": "紧急联系人",
+        "value": "演示联系人"
+      },
+      {
+        "label": "紧急联系人电话",
+        "value": "13900000000"
+      },
+      {
+        "label": "年龄",
+        "value": "26"
+      },
+      {
+        "label": "国籍（地区）",
+        "value": "中国"
+      },
+      {
+        "label": "所在地点",
+        "value": "杭州"
+      },
+      {
+        "label": "是否有驾驶证",
+        "value": "否"
+      },
+      {
+        "label": "本科学校",
+        "value": "浙江大学"
+      },
+      {
+        "label": "本科专业名称",
+        "value": "计算机科学与技术"
+      },
+      {
+        "label": "最高学历毕业专业名称",
+        "value": "计算机科学与技术"
+      }
+    ],
+    "idNumber": "000000200001010000",
+    "skillsBulk": [
+      {
+        "skillName": "MySQL",
+        "skillLevel": "熟悉"
+      },
+      {
+        "skillName": "数据分析",
+        "skillLevel": "良好"
+      }
+    ],
+    "certificatesBulk": [
+      {
+        "certificateName": "演示技能证书（仅测试）"
+      }
+    ],
+    "competitionsBulk": [
+      {
+        "competitionName": "演示程序设计竞赛",
+        "competitionLevel": "校级一等奖（模拟）",
+        "competitionDate": "2025-05-15"
+      },
+      {
+        "competitionName": "第二演示创新竞赛",
+        "competitionLevel": "校级二等奖（模拟）",
+        "competitionDate": "2026-04-20"
+      }
+    ],
+    "honorsBulk": [
+      {
+        "honorName": "演示优秀志愿者（模拟）"
+      }
+    ],
+    "worksBulk": [
+      {
+        "workName": "演示网页表单作品",
+        "workUrl": "https://example.com/demo-work",
+        "workDescription": "固定演示作品说明，仅用于表单测试。"
+      }
+    ],
+    "politicalStatus": "群众",
+    "nation": "汉族",
+    "household": "山东省青岛市市南区",
+    "householdType": "非农业户口",
+    "maritalStatus": "未婚",
+    "height": "175",
+    "weight": "65",
+    "graduateStatus": "应届",
+    "englishLevel": "六级",
+    "englishScore": "520",
+    "computerLevel": "国家二级或同等水平",
+    "disciplineHighest": "工学",
+    "disciplineBachelor": "工学",
+    "interviewSite": "青岛",
+    "expectedCity": "青岛",
+    "otherLanguage": "日语",
+    "otherLanguageLevel": "N2",
+    "scholarship": "院级(校级)奖学金1次",
+    "outstandingGraduateLevel": "校级",
+    "practiceCount": "2或3个",
+    "studentCadreLevel": "主席级别（含主席团）、班长、团支书",
+    "studentRoles": "班长",
+    "competitionAwardLevel": "院校级",
+    "willingAllocation": "是",
+    "acceptRelocation": "是",
+    "acceptUnderdevelopedOverseas": "否",
+    "hasRelativesAtCompany": "否",
+    "recommendationCode": "DEMO2026"
+  }
+}

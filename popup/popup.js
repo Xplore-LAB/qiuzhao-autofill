@@ -47,6 +47,7 @@ const FIELD_TABS = [
       { key: 'educationDegree', label: '学历', type: 'select', options: ['', '专科', '本科', '硕士', '博士'] },
       { key: 'educationDiscipline', label: '学科', ph: '工学' },
       { key: 'academicDegree', label: '学位', ph: '工学学士' },
+      {key: 'educationType', label: '学历类型', ph: ''},
       { key: 'trainingMethod', label: '培养方式', ph: '全日制' },
       { key: 'educationRank', label: '教育专业排名', ph: '留空则使用专业排名' },
       { key: 'unifiedRecruitment', label: '是否统招', type: 'select', options: ['', '是', '否'] },
@@ -105,6 +106,7 @@ const FIELD_TABS = [
       {key: 'languageSpeaking', label: '听说能力', ph: ''},
       {key: 'languageWriting', label: '读写能力', ph: ''},
       {key: 'internshipAchievement', label: '工作业绩', ph: ''},
+      {key: 'projectUrl', label: '项目链接', ph: ''},
       {key: 'projectRole', label: '项目职务', ph: ''},
       {key: 'projectResponsibility', label: '项目职责', ph: ''},
       {key: 'researchChannel', label: '发布渠道', ph: ''},
@@ -118,6 +120,7 @@ const FIELD_TABS = [
       {key: 'competitionDate', label: '竞赛获奖时间', ph: ''},
       {key: 'honorName', label: '荣誉名称', ph: ''},
       {key: 'workName', label: '作品名称', ph: ''},
+      {key: 'workDescription', label: '作品描述', ph: ''},
       {key: 'workUrl', label: '作品链接', ph: ''},
       {key: 'skillsBulk', label: '批量IT技能', type: 'records', ph: '每条记录用空行分隔，或导入 JSON 数组'},
       {key: 'certificatesBulk', label: '批量技能证书', type: 'records', ph: '每条记录用空行分隔，或导入 JSON 数组'},
@@ -242,6 +245,9 @@ const DEMO_PROFILE = {
 
 /* 站点规则可选的目标字段（与 content.js 的 FIELDS 保持一致） */
 const RULE_FIELDS = [
+  ['workDescription', '作品描述'],
+  ['projectUrl', '项目链接'],
+  ['educationType', '学历类型'],
   ['educationCollege', '学院'],
   ['educationLab', '实验室'],
   ['educationMentor', '导师姓名'],
@@ -1196,7 +1202,7 @@ async function fillCurrentTab(selfCheck) {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab || tab.id == null) { showResult('未找到当前标签页', true); return; }
     const runtime=await withUiTimeout(chrome.tabs.sendMessage(tab.id,{type:'PING'},{frameId:0}),3000);
-    if(!runtime || runtime.contentBuild!=='1.16.6-dev'){
+    if(!runtime || runtime.contentBuild!=='1.16.10-dev'){
       showResult('页面仍在使用旧版脚本。请先重新加载扩展，再刷新招聘页面后重试；本次未开始填写。',true);return;
     }
     fillSession = {tabId:tab.id, stopped:false, timer:null, polling:false};

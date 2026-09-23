@@ -13,7 +13,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'u
 const popupHarness = fs.readFileSync(path.join(root, 'test/popup-ui-harness.html'), 'utf8');
 const popupMock = fs.readFileSync(path.join(root, 'test/popup-mock-chrome.js'), 'utf8');
 
-assert.equal(manifest.version, '1.16.6');
+assert.equal(manifest.version, '1.16.10');
 assert.ok(manifest.content_scripts[0].js.includes('shared/site-observations.js'), 'site observation module must load before content logic');
 assert.ok(popupHtml.includes('v'+manifest.version+'-dev'),'popup version mismatch');
 assert.ok(popupHtml.includes('id="siteObservationList"'), 'site observation manager view missing');
@@ -81,7 +81,8 @@ assert.ok(fieldBlock && ruleBlock);
 
 const fieldKeys = [...fieldBlock[1].matchAll(/\{ key: '([^']+)'/g)].map(match => match[1]);
 const ruleKeys = [...ruleBlock[1].matchAll(/\['([^']+)'/g)].map(match => match[1]);
-assert.equal(fieldKeys.length, 98);
+assert.equal(fieldKeys.length, 101);
+for (const key of ['educationType', 'projectUrl', 'workDescription']) assert.ok(fieldKeys.includes(key));
 assert.deepEqual(fieldKeys.filter(key => !ruleKeys.includes(key)), []);
 assert.deepEqual(ruleKeys.filter(key => !fieldKeys.includes(key)), []);
 
