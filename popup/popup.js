@@ -566,13 +566,16 @@ function setSourceStatus(text, state) {
 function renderSourceMaterial() {
   const hasSource = !!(sourceMaterial && sourceMaterial.text);
   $('#extractSourceAi').disabled = !hasSource;
+  $('#extractSourceLocal').disabled = !hasSource;
   $('#clearSource').disabled = !hasSource;
+  $('#sourcePreview').hidden = !hasSource;
+  $('#sourceText').textContent = hasSource ? sourceMaterial.text : '';
   if (!hasSource) {
     setSourceStatus('尚未导入原始资料。', 'info');
     return;
   }
   const count = Number(sourceMaterial.characters || sourceMaterial.text.length || 0);
-  const suffix = '，本地读取 ' + count + ' 个字符。更新资料需点击提取并核对变化。';
+  const suffix = '，本地读取 ' + count + ' 个字符。可本地解析或使用 AI 辅助，核对后应用。';
   setSourceStatus('已导入 ' + sourceMaterial.name + suffix, 'success');
 }
 
@@ -613,22 +616,55 @@ async function importSourceMaterial(event) {
   const file = event.target.files && event.target.files[0];
   event.target.value = '';
   if (!file) return;
+  if (sourceBusy) return;
+  if (pendingUpdate) { setSourceStatus('请先应用或放弃下方待核对的更新，再选择新文件。', 'error'); return; }
+  setSourceBusy(true);
   setSourceStatus('正在本地读取资料…', 'loading');
   try {
     const nextSource = await readSourceFile(file);
-    await chrome.storage.local.set({ sourceMaterial: nextSource });
+    if (nextSource.type === 'pdf') {
+      const parsed = globalThis.QIUZHAO_RESUME_PARSER.parseResume(nextSource.text);
+      if (Object.keys(parsed.profile).length) {
+        await stageProfileUpdate(parsed.profile, '本地解析 '+nextSource.name, { extraction: parsed, source: nextSource });
+      } else {
+        await chrome.storage.local.set({ sourceMaterial: nextSource });
+      }
+    } else await chrome.storage.local.set({ sourceMaterial: nextSource });
     sourceMaterial = nextSource;
     renderSourceMaterial();
-    setSourceStatus('文件已在本地读取。点击 AI 提取并预览后再选择需要更新的资料。', 'success');
+    setSourceStatus(nextSource.type === 'pdf'
+      ? (pendingUpdate ? '本地解析完成，请在下方核对并应用。尚未替换已有资料，也未发送给 AI。' : '已读取原文，未识别出可靠字段。可查看原文补充资料，或使用 AI 提取。')
+      : '文件已在本地读取。可点击本地解析，或使用 AI 提取并预览。', 'success');
   } catch (error) {
     setSourceStatus(String(error && error.message || '资料读取失败'), 'error');
+  } finally {
+    setSourceBusy(false);
   }
+}
+
+function setSourceBusy(busy) {
+  sourceBusy = busy;
+  $('#sourceFileBtn').disabled = busy;
+  for (const id of ['extractSourceLocal','extractSourceAi','clearSource']) $("#"+id).disabled = busy || !sourceMaterial?.text;
+}
+
+async function extractSourceLocally() {
+  if (!sourceMaterial?.text || sourceBusy) return;
+  if (pendingUpdate) { workflowStatus('请先应用或放弃待核对的更新，再解析资料。',true); return; }
+  setSourceBusy(true);
+  try {
+    const parsed=globalThis.QIUZHAO_RESUME_PARSER.parseResume(sourceMaterial.text);
+    if (!Object.keys(parsed.profile).length) throw Error('未识别出可靠字段。请查看原文补充资料，或使用 AI 提取。');
+    await stageProfileUpdate(parsed.profile,'本地解析 '+sourceMaterial.name,{extraction:parsed});
+    setSourceStatus('本地解析完成，请核对并应用。未发送给 AI。','success');
+  } catch(error) { setSourceStatus(error.message,'error'); }
+  finally { setSourceBusy(false); }
 }
 
 async function extractSourceWithAi() {
   if (!sourceMaterial || !sourceMaterial.text || sourceBusy) return;
   if(pendingUpdate){workflowStatus('请先应用或放弃待核对的更新，再提取新资料。',true);return;}
-  sourceBusy=true;$('#sourceFileBtn').disabled=true;$('#clearSource').disabled=true;
+  setSourceBusy(true);
   const button = $('#extractSourceAi');
   button.disabled = true;
   button.textContent = '提取中…';
@@ -646,11 +682,12 @@ async function extractSourceWithAi() {
   } finally {
     button.disabled = false;
     button.textContent = 'AI 提取并预览';
-    sourceBusy=false;$('#sourceFileBtn').disabled=false;$('#clearSource').disabled=false;
+    setSourceBusy(false);
   }
 }
 
 async function clearSourceMaterial() {
+  if (sourceBusy) return;
   sourceMaterial = null;
   await chrome.storage.local.remove('sourceMaterial');
   renderSourceMaterial();
@@ -758,6 +795,7 @@ function bind() {
   $('#sourceFileBtn').addEventListener('click', () => $('#sourceFile').click());
   $('#sourceFile').addEventListener('change', importSourceMaterial);
   $('#extractSourceAi').addEventListener('click', extractSourceWithAi);
+  $('#extractSourceLocal').addEventListener('click', extractSourceLocally);
   $('#clearSource').addEventListener('click', clearSourceMaterial);
 
   $('#fillBtn').addEventListener('click', () => fillCurrentTab(false));
@@ -1202,7 +1240,7 @@ async function fillCurrentTab(selfCheck) {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab || tab.id == null) { showResult('未找到当前标签页', true); return; }
     const runtime=await withUiTimeout(chrome.tabs.sendMessage(tab.id,{type:'PING'},{frameId:0}),3000);
-    if(!runtime || runtime.contentBuild!=='1.16.10-dev'){
+    if(!runtime || runtime.contentBuild!=='1.16.11-dev'){
       showResult('页面仍在使用旧版脚本。请先重新加载扩展，再刷新招聘页面后重试；本次未开始填写。',true);return;
     }
     fillSession = {tabId:tab.id, stopped:false, timer:null, polling:false};

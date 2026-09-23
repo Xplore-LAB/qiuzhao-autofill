@@ -1,4 +1,4 @@
-/* 秋招网申自动填充助手 - content script v1.16.10-dev
+/* 秋招网申自动填充助手 - content script v1.16.11-dev
  *
  * 职责：
  *   1. 识别页面中的网申表单字段（中文/英文；label / placeholder / aria-label / name 属性多路匹配）
@@ -3039,7 +3039,7 @@
     const report=!run.automatic && lastSelfCheck && lastSelfCheck.report;
     return {
       startedAt:run.startedAt,durationMs:Date.now()-run.startedAt,host:location.hostname,
-      contentBuild:'1.16.10-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
+      contentBuild:'1.16.11-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
       events:run.events||[],droppedEvents:run.droppedEvents||0,
       trigger:run.automatic?'automatic':'manual',verification:run.automatic?'immediate':report?'final':'incomplete',
       outcome:['fill-cancelled','fill-timeout','fill-error','sensitive-page'].includes(result.note)?result.note:run.finished||run.automatic?'finished':'running',
@@ -3223,7 +3223,7 @@
     if (msg.type === 'PROBE_FORM_FRAMES') {
       const sensitive=hasVisiblePassword();
       chrome.runtime.sendMessage({type:'REPORT_FORM_FRAME',requestId:msg.requestId,
-        frame:{contentBuild:'1.16.10-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
+        frame:{contentBuild:'1.16.11-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
         .then(()=>sendResponse({ok:true}),()=>sendResponse({ok:false}));
       return true;
     }
@@ -3234,7 +3234,7 @@
       el.scrollIntoView({block:'center',behavior:'smooth'});flash(el);sendResponse({ok:true});return;
     }
     if (msg.type === 'PING') {
-      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.10-dev' });
+      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.11-dev' });
       return;
     }
     if (msg.type === 'SCAN_FORM') {

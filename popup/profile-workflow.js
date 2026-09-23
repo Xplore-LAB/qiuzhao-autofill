@@ -14,7 +14,7 @@ function renderProfileSummary() {
   const count=Object.values(profile).filter(v=>!UPDATES.empty(v)).length;
   $('#profileHeading').textContent=count?'资料已建立，可继续更新':'先建立你的资料';
   const missing=[['name','姓名'],['phone','手机'],['email','邮箱']].filter(([k])=>!profile[k]).map(([,v])=>v);
-  $('#profileSummary').textContent=count?`已保存 ${count} 项资料。${missing.length?'常用信息待补充：'+missing.join('、')+'。':'姓名、手机、邮箱已填写，请在投递前核对。'}`:'直接填写资料即可使用本地填充；AI 提取为可选方式。';
+  $('#profileSummary').textContent=count?`已保存 ${count} 项资料。${missing.length?'常用信息待补充：'+missing.join('、')+'。':'姓名、手机、邮箱已填写，请在投递前核对。'}`:'选择 PDF 简历即可本地解析，核对后直接用于网申；也可手动填写。';
 }
 function refreshProfileEditor() {
   for(const tab of FIELD_TABS)$('#tab-'+tab.id).replaceChildren();
@@ -74,13 +74,14 @@ function normalizeIncoming(raw) {
   }
   return incoming;
 }
-async function stageProfileUpdate(incoming,label,{skipSave=false,resolvingConflict=false}={}) {
+async function stageProfileUpdate(incoming,label,{skipSave=false,resolvingConflict=false,extraction=null,source=null}={}) {
   if(pendingUpdate)throw Error('请先应用或放弃下方待核对的更新，再导入另一份资料');
   if(!skipSave)await persistProfileEdits();
   const clean=normalizeIncoming(incoming);
   const stored=await chrome.storage.local.get('profile');
   const draft={schema:1,label:String(label).slice(0,100),base:cloneProfile(stored.profile||{}),incoming:clean,at:Date.now(),resolvingConflict};
-  await chrome.storage.local.set({pendingProfileUpdate:draft});
+  if (extraction) draft.extraction={warnings:extraction.warnings,evidence:extraction.evidence};
+  await chrome.storage.local.set({pendingProfileUpdate:draft,...(source?{sourceMaterial:source}:{})});
   pendingUpdate=draft;renderProfileUpdate();selectProfileTab('resume');
   $('#updateReview').scrollIntoView?.({block:'start'});
 }
@@ -90,13 +91,18 @@ function renderProfileUpdate() {
   const rows=UPDATES.diff(pendingUpdate.base,pendingUpdate.incoming);
   $('#updateTitle').textContent=pendingUpdate.label+' · '+rows.length+' 项变化';
   $('#updateHint').textContent='新增内容默认勾选；替换和清空需逐项勾选。未提及的资料保留，多条经历按整组更新。应用前自动保留一份恢复记录。';
+  if (pendingUpdate.extraction?.warnings?.length) $('#updateHint').textContent+=' '+pendingUpdate.extraction.warnings.join(' ');
   for(const row of rows){
     const card=document.createElement('label');card.className='update-row';
     const check=document.createElement('input');check.type='checkbox';check.dataset.updateKey=row.key;check.checked=row.selected;
     const title=document.createElement('strong');title.textContent=labelForProfileKey(row.key)+' · '+({add:'新增',change:'替换',clear:'清空'}[row.kind]);
     const before=document.createElement('pre');before.textContent='当前：'+(displayProfileValue(row.before)||'（空）');
     const after=document.createElement('pre');after.textContent='更新：'+(displayProfileValue(row.after)||'（空）');
-    card.append(check,title,before,after);root.append(card);
+    card.append(check,title,before,after);
+    if (pendingUpdate.extraction?.evidence?.[row.key]) {
+      const origin=document.createElement('pre');origin.textContent='原文依据：'+pendingUpdate.extraction.evidence[row.key];card.append(origin);
+    }
+    root.append(card);
   }
   $('#applyUpdateBtn').disabled=!rows.some(r=>r.selected);
   root.onchange=()=>{$('#applyUpdateBtn').disabled=!root.querySelector('input:checked');};

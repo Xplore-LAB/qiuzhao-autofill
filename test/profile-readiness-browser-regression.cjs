@@ -29,7 +29,7 @@ const root = path.resolve(__dirname, '..');
           query: async () => [{ id: 7 }],
           sendMessage: async (id, message) => {
             if (message.type === 'PREVIEW_FORM') return {previewToken: 'demo-preview', totalControls: 3, filledControls: 0, ruleCandidates: 2, aiCandidates: 1};
-            if (message.type === 'PING') return { host: 'fixture.invalid', contentBuild: '1.16.10-dev' };
+            if (message.type === 'PING') return { host: 'fixture.invalid', contentBuild: '1.16.11-dev' };
             if (message.type === 'FILL_FORM') fixture.fills.push(message);
             return { running: false };
           },

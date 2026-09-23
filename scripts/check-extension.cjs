@@ -8,7 +8,7 @@ const unit=[
  'site-observations-regression.cjs','run-timing-regression.cjs','settlement-speed-regression.cjs','settlement-reuse-regression.cjs','run-logs-regression.cjs','feedback-loop-regression.cjs',
  'default-profile-regression.cjs','profile-updates-regression.cjs','profile-json-import-regression.cjs',
  'applications-regression.cjs','frame-router-regression.cjs','workflow-races-regression.cjs','custom-field-matching-regression.cjs','ant-calendar-jump-regression.cjs',
- 'quality-gate-regression.cjs'
+ 'quality-gate-regression.cjs','resume-parser-regression.cjs'
 ];
 const browser=['phoenix-area-readiness-regression.cjs','phoenix-autocomplete-regression.cjs','feishu-multiselect-regression.cjs','feishu-controls-regression.cjs','feishu-fields-regression.cjs','hisense-browser-regression.cjs','native-wait-speed-regression.cjs','ant-wait-speed-regression.cjs','extension-lifecycle-regression.cjs','phoenix-close-browser-regression.cjs','choice-close-browser-regression.cjs','zhuanzhuan-extension-regression.cjs','quick-ui-regression.cjs','sidepanel-regression.cjs','profile-readiness-browser-regression.cjs','real-extension-workflow.cjs','kuaishou-coverage-regression.cjs','pdf-import-regression.cjs'];
 const args=process.argv.slice(2),unitOnly=args.length===1&&args[0]==='--unit';

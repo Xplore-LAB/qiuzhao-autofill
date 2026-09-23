@@ -56,12 +56,15 @@
       <div class="divider">从文件更新资料</div>
       <input type="file" id="sourceFile" accept=".pdf,.docx,.xlsx,.xls,.csv,.json,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
       <button id="sourceFileBtn" class="ghost">选择简历文件</button>
-      <p>支持 PDF、Word（.docx）、Excel 和文本，最大 20MB；PDF 最多 50 页，扫描件请先转为文本。选择文件只在本地读取。点击 AI 提取后才会发送文本给所选模型，结果先进入差异预览。提取前需配置模型并启用 AI。</p>
+      <p>导入 PDF 后自动在本机解析姓名、联系方式和多段经历，无需配置 AI。核对并应用后即可填写网申。支持 PDF、Word（.docx）、Excel 和文本，最大 20MB；PDF 最多 50 页，扫描件请先转为文本。</p>
       <p id="sourceStatus" class="ai-status" data-state="info">尚未导入原始资料。</p>
+      <details id="sourcePreview" hidden><summary>查看解析原文，核对遗漏</summary><pre id="sourceText" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto"></pre></details>
       <div class="ai-actions">
-        <button id="extractSourceAi" class="primary ai-connect" disabled>AI 提取并预览</button>
+        <button id="extractSourceLocal" class="primary" disabled>本地解析并预览</button>
+        <button id="extractSourceAi" class="ai-connect" disabled>AI 提取并预览</button>
         <button id="clearSource" class="ghost danger-ghost" disabled>移除原始文件</button>
       </div>
+      <p class="hint">复杂简历可选用 AI 辅助：配置模型并启用 AI，先处理当前草稿，再点击“AI 提取并预览”。点击此按钮会将原文发送给所选模型。</p>
 
       <button id="configureAiBtn" class="link">配置并启用 AI</button>
       <p id="workflowStatus" role="status" aria-live="polite"></p>
@@ -156,7 +159,7 @@
   </main>
 
   <footer>
-    <span><span id="saveStatus"></span><span class="version">v1.16.10-dev</span></span>
+    <span><span id="saveStatus"></span><span class="version">v1.16.11-dev</span></span>
     <button id="reviewConflictsBtn" class="link" hidden>核对并发修改</button>
     <button id="saveNowBtn" class="link">立即保存</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
@@ -166,6 +169,7 @@
   <script src="../shared/site-observations.js"></script>
   <script src="../shared/feedback-loop.js"></script>
   <script src="../shared/profile-updates.js"></script>
+  <script src="../shared/resume-parser.js"></script>
   <script src="../vendor/xlsx.full.min.js"></script>
   <script src="../vendor/mammoth.browser.min.js"></script>
   <script src="popup.js"></script>

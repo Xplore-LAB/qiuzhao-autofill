@@ -16,7 +16,7 @@ const root=path.resolve(__dirname,'..');
  const browser=await chromium.launch({headless:true,executablePath:process.env.AUTOFILL_BROWSER_PATH});
  try{
   const page=await browser.newPage({viewport:{width:300,height:750}});
-  await page.addInitScript({content:`window.active=7;window.sent=[];window.chrome={storage:{local:{get:async()=>({profile:{name:'演示姓名'},settings:{}})}},runtime:{getManifest:()=>({version:'1.16.10'}),sendMessage:async()=>({ok:true,frames:[{frameId:0,host:'fixture.invalid',totalControls:3}]})},tabs:{query:async()=>[{id:active}],sendMessage:async(id,m)=>{sent.push({id,type:m.type});if(m.type==='PREVIEW_FORM')return {previewToken:'demo-preview',totalControls:3,filledControls:0,ruleCandidates:2,aiCandidates:1};return m.type==='PING'?{host:'fixture.invalid',contentBuild:'1.16.10-dev'}:{running:false};}}};`});
+  await page.addInitScript({content:`window.active=7;window.sent=[];window.chrome={storage:{local:{get:async()=>({profile:{name:'演示姓名'},settings:{}})}},runtime:{getManifest:()=>({version:'1.16.11'}),sendMessage:async()=>({ok:true,frames:[{frameId:0,host:'fixture.invalid',totalControls:3}]})},tabs:{query:async()=>[{id:active}],sendMessage:async(id,m)=>{sent.push({id,type:m.type});if(m.type==='PREVIEW_FORM')return {previewToken:'demo-preview',totalControls:3,filledControls:0,ruleCandidates:2,aiCandidates:1};return m.type==='PING'?{host:'fixture.invalid',contentBuild:'1.16.11-dev'}:{running:false};}}};`});
   await page.goto(pathToFileURL(path.join(root,'popup/quick.html')).href+'?tabId=7');
   await page.waitForFunction(()=>!document.getElementById('start').disabled);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal overflow in narrow sidebar');
