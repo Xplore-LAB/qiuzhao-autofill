@@ -9,6 +9,7 @@ range.addEventListener('mousedown',()=>{pressed=true;});
 range.addEventListener('click',()=>{clicks++;if(pressed)layer.hidden=false;pressed=false;});
 w.checkFillRun=()=>{};w.isVisible=e=>e.isConnected&&!e.hidden;w.visibleChoiceLayers=()=>layer.hidden?[]:[layer];w.ownedChoiceLayer=(a,ls)=>ls[0]||null;
 w.dismissVisibleChoiceLayers=async()=>{closed++;layer.hidden=true;return true;};w.wait=async()=>{};w.traceStep=()=>{};
+w.waitForControlState=async p=>p();
 w.fillAntCalendar=async(anchor,l,m)=>{anchor.querySelector('input').value=m[1]+'-'+m[2].padStart(2,'0')+'-01';return true;};
 // Load production click helpers and date orchestration, not a rewritten implementation.
 w.eval('let ignoreLearningUntil=0,programmaticFill=false;'+source.slice(source.indexOf('  function safeCustomClick('),source.indexOf('  function fireEnter('))+source.slice(source.indexOf('  const openDateRanges'),source.indexOf('  async function fillAntCalendar('))+'window.fill=fillCustomDate;');

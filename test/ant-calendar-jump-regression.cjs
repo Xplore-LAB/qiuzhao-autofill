@@ -1,6 +1,7 @@
 // Minimal Ant panel state machine: only actual panel/button actions change dates.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../content/content.js'),'utf8');
+const helper=source.slice(source.indexOf('  async function waitForControlState('),source.indexOf('  async function waitForVisibleQuery('));
 const code=source.slice(source.indexOf('  async function fillAntCalendar('),source.indexOf('  async function fillPhoenixDayPicker('));
 function fixture({year=2026,month=9,mode='date',disabled='',readonly=true,stalled=false,headers=true}={}){
  const input={value:'',readOnly:readonly},events=[];let decade=Math.floor(year/10)*10;
@@ -29,8 +30,8 @@ function fixture({year=2026,month=9,mode='date',disabled='',readonly=true,stalle
   return buttons(s);
  },querySelector(s){return this.querySelectorAll(s)[0]||null;}};
  const anchor={querySelectorAll:s=>s==='input'?[input]:[],querySelector:s=>s==='input'?input:null,closest:()=>null,matches:()=>false,classList:{contains:()=>false},getAttribute:()=>null};
- const ctx={Date,Number,String,Array,Math,pad2:n=>String(n).padStart(2,'0'),isVisible:n=>!!n?.isConnected,wait:async()=>{},safeCustomClick:n=>{if(!n)return false;n.click();return true;}};
- vm.createContext(ctx);vm.runInContext(code+';this.fill=fillAntCalendar;',ctx);
+ const ctx={checkFillRun:()=>{},Date,Number,String,Array,Math,pad2:n=>String(n).padStart(2,'0'),isVisible:n=>!!n?.isConnected,wait:async()=>{},safeCustomClick:n=>{if(!n)return false;n.click();return true;}};
+ vm.createContext(ctx);vm.runInContext(helper+code+';this.fill=fillAntCalendar;',ctx);
  return {fill:(y,m,d)=>ctx.fill(anchor,panel,['',String(y),String(m),d==null?undefined:String(d)]),events,input};
 }
 (async()=>{

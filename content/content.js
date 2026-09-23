@@ -1,4 +1,4 @@
-/* 秋招网申自动填充助手 - content script v1.16.1-dev
+/* 秋招网申自动填充助手 - content script v1.16.3-dev
  *
  * 职责：
  *   1. 识别页面中的网申表单字段（中文/英文；label / placeholder / aria-label / name 属性多路匹配）
@@ -558,6 +558,20 @@
     }, ms));
   }
 
+  // Check immediately; poll properties as well as DOM because value writes need not
+  // generate mutations. Bounded samples retain cancellation and timeout behavior.
+  async function waitForControlState(predicate, timeoutMs, stableSamples = 1) {
+    let stable = 0;
+    const interval = 40, attempts = Math.ceil(timeoutMs / interval);
+    for (let attempt = 0; attempt <= attempts; attempt++) {
+      checkFillRun();
+      stable = predicate() ? stable + 1 : 0;
+      if (stable >= stableSamples) return true;
+      if (attempt < attempts) await wait(Math.min(interval, timeoutMs - attempt * interval));
+    }
+    return false;
+  }
+
   async function waitForVisibleQuery(selector, timeoutMs) {
     const until = Date.now() + (timeoutMs || 800);
     do {
@@ -876,10 +890,12 @@
     }
     const clickTarget=anchor.matches('.ant-picker-range .ant-picker-input') ? anchor.querySelector('input') : anchor;
     if (!safeCustomClick(clickTarget, !!range)) return false;
-    await wait(140);
+    const antDate = anchor.matches('.ant-picker,.ant-picker-range .ant-picker-input');
+    if (antDate) await waitForControlState(() => !!ownedChoiceLayer(anchor, visibleChoiceLayers()), 1640);
+    else await wait(140);
     let layers = visibleChoiceLayers();
     let layer = ownedChoiceLayer(anchor, layers);
-    for (let attempt = 0; !layer && attempt < 15; attempt++) {
+    for (let attempt = 0; !antDate && !layer && attempt < 15; attempt++) {
       await wait(100);
       layer = ownedChoiceLayer(anchor, visibleChoiceLayers());
     }
@@ -938,8 +954,7 @@
       if (!allowed(button)) return false;
       const previous=signature();
       if (!safeCustomClick(button)) return false;
-      for (let retry=0;retry<15;retry++) {await wait(80);if(signature()!==previous)return true;}
-      return false;
+      return waitForControlState(() => signature() !== previous, 1200);
     };
     const navigation = (panel, selector) => {
       // Linked range panels expose backward/forward arrows on opposite sides.
@@ -959,8 +974,7 @@
           continue;
         }
         if (!safeCustomClick(target)) return false;
-        for (let n=0;n<15;n++) {await wait(100);if(Array.from(anchor.querySelectorAll('input')).some(input=>input.value===desired))return true;}
-        return false;
+        return waitForControlState(() => anchor.isConnected !== false && Array.from(anchor.querySelectorAll('input')).some(input=>input.value===desired), 1520, 2);
       }
       const current=cells.find(cell=>cell.classList.contains('ant-picker-cell-in-view')) || cells[0];
       const date=current && /^(\d{4})(?:-(\d{2}))?/.exec(current.title);
@@ -1114,16 +1128,29 @@
       choiceFailureReasons.set(anchor, 'choice-layer-close-blocked');
       await finishChoiceExperience(anchor, false); return false;
     }
-    if (layer) {
+    const antSelect = !!anchor.matches?.('.ant-select');
+    // A selected Ant option can commit before its leave animation finishes.
+    // Wait for automatic closure before sending Escape or toggling the anchor.
+    if (layer && antSelect) await waitForControlState(() => !isVisible(layer), 520);
+    if (layer && isVisible(layer)) {
       // Close the owning control, never re-click a selected (possibly multi-select) option.
       const target = anchor.contains(document.activeElement) ? document.activeElement : anchor;
       target.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',code:'Escape',bubbles:true}));
-      await wait(80);
-      if (isVisible(layer) && anchor.isConnected) { safeCustomClick(anchor); await wait(140); }
+      if (antSelect) await waitForControlState(() => !isVisible(layer), 520);
+      else await wait(80);
+      if (isVisible(layer) && anchor.isConnected) {
+        safeCustomClick(anchor);
+        if (antSelect) await waitForControlState(() => !isVisible(layer), 520);
+        else await wait(140);
+      }
       if (isVisible(layer) || visibleChoiceLayers().length) {
         choiceFailureReasons.set(anchor, 'choice-layer-close-blocked');
         await finishChoiceExperience(anchor, false); return false;
       }
+    }
+    if (visibleChoiceLayers().length) {
+      choiceFailureReasons.set(anchor, 'choice-layer-close-blocked');
+      await finishChoiceExperience(anchor, false); return false;
     }
     const ok = anchor.isConnected && customControlMatchesValue(anchor, field, value);
     if (!ok) choiceFailureReasons.set(anchor, 'target-mismatch');
@@ -1148,7 +1175,8 @@
       return false;
     }
     if(typeof traceStep==='function')traceStep('choice-open',anchor,field);
-    if(anchor.matches?.('.ant-select')) {
+    const antSelect = !!anchor.matches?.('.ant-select');
+    if(antSelect) {
       const trigger=anchor.querySelector('.ant-select-selector');
       if(!trigger || !isVisible(trigger))return false;
       checkFillRun();
@@ -1160,10 +1188,11 @@
         anchor.querySelector('input')?.focus({preventScroll:true});
       } finally {programmaticFill=false;}
     } else if (!safeCustomClick(anchor)) return false;
-    await wait(140);
+    if (antSelect) await waitForControlState(() => !!ownedChoiceLayer(anchor, visibleChoiceLayers()), 960);
+    else await wait(140);
 
     let layers = visibleChoiceLayers();
-    for (let attempt = 0; !layers.length && attempt < 10; attempt++) {
+    for (let attempt = 0; !antSelect && !layers.length && attempt < 10; attempt++) {
       await wait(80);
       layers = visibleChoiceLayers();
     }
@@ -1211,7 +1240,9 @@
       clicked = true;
       if(typeof traceStep==='function')traceStep('choice-clicked',anchor,field,{matchesTarget:customControlMatchesValue(anchor,field,value)});
       choiceFailureReasons.set(anchor, 'choice-not-committed');
-      await wait(140);
+      if (antSelect && !placeAware) {
+        await waitForControlState(() => customControlMatchesValue(anchor, field, value) || !ownedChoiceLayer(anchor, visibleChoiceLayers()), 160);
+      } else await wait(140);
       layers = visibleChoiceLayers();
       if (!layers.length) break;
       layer = ownedChoiceLayer(anchor, layers);
@@ -1220,7 +1251,11 @@
     }
 
     if (clicked && await confirmChoiceSelection(anchor, field, value)) {
-      await wait(350);
+      if (antSelect && !placeAware) {
+        // This is a readiness check, not proof against delayed rollback. Keep the
+        // run settlement window and final target verification below unchanged.
+        await waitForControlState(() => anchor.isConnected && customControlMatchesValue(anchor, field, value), 360, 2);
+      } else await wait(350);
       if(customControlMatchesValue(anchor,field,value)){if(typeof traceStep==='function')traceStep('choice-confirmed',anchor,field,{matchesTarget:true});return settleCustomChoice(anchor,field,value);}
     }
     if (!clicked && layer && isVisible(layer)) await dismissVisibleChoiceLayers();
@@ -2919,7 +2954,7 @@
     const report=!run.automatic && lastSelfCheck && lastSelfCheck.report;
     return {
       startedAt:run.startedAt,durationMs:Date.now()-run.startedAt,host:location.hostname,
-      contentBuild:'1.16.1-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
+      contentBuild:'1.16.3-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
       events:run.events||[],droppedEvents:run.droppedEvents||0,
       trigger:run.automatic?'automatic':'manual',verification:run.automatic?'immediate':report?'final':'incomplete',
       outcome:['fill-cancelled','fill-timeout','fill-error','sensitive-page'].includes(result.note)?result.note:run.finished||run.automatic?'finished':'running',
@@ -3103,7 +3138,7 @@
     if (msg.type === 'PROBE_FORM_FRAMES') {
       const sensitive=hasVisiblePassword();
       chrome.runtime.sendMessage({type:'REPORT_FORM_FRAME',requestId:msg.requestId,
-        frame:{contentBuild:'1.16.1-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
+        frame:{contentBuild:'1.16.3-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
         .then(()=>sendResponse({ok:true}),()=>sendResponse({ok:false}));
       return true;
     }
@@ -3114,7 +3149,7 @@
       el.scrollIntoView({block:'center',behavior:'smooth'});flash(el);sendResponse({ok:true});return;
     }
     if (msg.type === 'PING') {
-      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.1-dev' });
+      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.3-dev' });
       return;
     }
     if (msg.type === 'SCAN_FORM') {

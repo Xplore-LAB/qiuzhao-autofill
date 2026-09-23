@@ -10,7 +10,7 @@ const unit=[
  'applications-regression.cjs','frame-router-regression.cjs','workflow-races-regression.cjs','custom-field-matching-regression.cjs','ant-calendar-jump-regression.cjs',
  'quality-gate-regression.cjs'
 ];
-const browser=['extension-lifecycle-regression.cjs','phoenix-close-browser-regression.cjs','choice-close-browser-regression.cjs','zhuanzhuan-extension-regression.cjs','quick-ui-regression.cjs','sidepanel-regression.cjs','profile-readiness-browser-regression.cjs','real-extension-workflow.cjs','kuaishou-coverage-regression.cjs','pdf-import-regression.cjs'];
+const browser=['ant-wait-speed-regression.cjs','extension-lifecycle-regression.cjs','phoenix-close-browser-regression.cjs','choice-close-browser-regression.cjs','zhuanzhuan-extension-regression.cjs','quick-ui-regression.cjs','sidepanel-regression.cjs','profile-readiness-browser-regression.cjs','real-extension-workflow.cjs','kuaishou-coverage-regression.cjs','pdf-import-regression.cjs'];
 const args=process.argv.slice(2),unitOnly=args.length===1&&args[0]==='--unit';
 if(args.length&&!unitOnly){console.error('Usage: node scripts/check-extension.cjs [--unit]');process.exit(2);}
 const tests=unitOnly?unit:unit.concat(browser);

@@ -19,7 +19,7 @@ async function calendar(disabled=false){
  const layer=v.document.querySelector('#layer'),anchor=v.document.querySelector('#anchor'),cell=layer.querySelector('td');
  layer.querySelector('button').onclick=()=>{cell.title='2026-08-01';if(disabled)cell.classList.add('ant-picker-cell-disabled');};
  cell.querySelector('div').onclick=()=>anchor.querySelector('input').value=cell.title;
- v.eval('function isVisible(e){return e.isConnected;} function pad2(n){return String(n).padStart(2,"0");} function safeCustomClick(e){e.click();return true;} async function wait(){}'+cut('  async function fillAntCalendar(', '  async function fillPhoenixDayPicker(')+'window.fill=fillAntCalendar;');
+ v.eval('function isVisible(e){return e.isConnected;} function pad2(n){return String(n).padStart(2,"0");} function safeCustomClick(e){e.click();return true;} async function wait(){}'+'function checkFillRun(){}'+cut('  async function waitForControlState(', '  async function waitForVisibleQuery(')+cut('  async function fillAntCalendar(', '  async function fillPhoenixDayPicker(')+'window.fill=fillAntCalendar;');
  try{assert.equal(await v.fill(anchor,layer,['','2026','8','1']),!disabled);}finally{d.window.close();}
 }
 async function ai(){
