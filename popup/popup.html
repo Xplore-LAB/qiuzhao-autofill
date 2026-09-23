@@ -10,8 +10,8 @@
     <div class="brand">
       <span class="logo">申</span>
       <div class="brand-text">
-        <h1>秋招自动填充</h1>
-        <p>建好一份资料，反复填写网申</p>
+        <h1>资料管理</h1>
+        <p>维护资料、配置模型、查看详细结果</p>
       </div>
     </div>
     <label class="switch" title="打开网申页面后，自动识别并填充空白字段">
@@ -50,7 +50,7 @@
 
   <main id="main">
     <section class="panel active" id="tab-resume">
-      <div class="resume-intro"><span class="eyebrow">我的简历</span><h2 id="profileHeading">先建立你的资料</h2><p id="profileSummary"></p></div>
+      <div class="resume-intro"><span class="eyebrow">我的简历</span><h2 id="profileHeading">先建立你的资料</h2><p id="profileSummary"></p><p id="defaultFileStatus"></p></div>
       <div class="resume-buttons"><button id="editProfileBtn" class="primary">填写 / 修改资料</button><button id="openManagerBtn">在大窗口管理</button></div>
       <ol class="journey"><li><b>建立资料</b><span>手动填写，或从文件提取后核对。</span></li><li><b>填写网申</b><span>默认保留网页已有输入，填写后自动核验。</span></li><li><b>确认与保存</b><span>处理待核对项，在网站自行保存或提交；附件简历需单独上传。</span></li></ol>
       <div class="divider">从文件更新资料</div>
@@ -70,9 +70,10 @@
         <div class="review-actions"><button id="applyUpdateBtn" class="primary">应用勾选的变化</button><button id="cancelUpdateBtn">放弃本次更新</button></div>
         <div id="updateRows"></div>
       </div>
-      <details class="resume-tools"><summary>备份与恢复</summary>
+      <details class="resume-tools"><summary>资料导入与备份</summary>
         <p>升级、重新安装或换电脑前先导出备份。备份包含个人资料，请妥善保管；不含 API 密钥和原始文件。</p>
-        <div class="resume-buttons"><button id="exportBtn">导出资料备份</button><button id="importBtn">从备份恢复资料</button><button id="recoverProfileBtn">查看上次更新前的资料</button></div>
+        <div class="resume-buttons"><button id="exportBtn">导出资料备份</button><button id="importBtn">导入资料 JSON</button><button id="recoverProfileBtn">查看上次更新前的资料</button></div>
+        <p>支持结构化资料 JSON 和旧备份；导入后先核对差异。附带的来源及待核对说明不会作为表单字段导入。</p>
         <p>恢复先核对资料差异；当前 AI 设置、学习记录和站点规则保持原状。</p>
       </details>
       <details class="resume-tools"><summary>演示与清理</summary><p>演示资料只用于测试。载入前可核对变化，已有资料默认不选中替换。</p><button id="demoBtn">预览演示资料</button><button id="clearBtn" class="link danger">清空本地数据</button></details>
@@ -100,6 +101,11 @@
       <div id="ruleList"></div>
       <button id="addRule" class="ghost">＋ 添加规则</button>
       <p class="hint">规则只对当前域名的网站生效，优先于通用识别。「匹配词」填该网站表单的标签文字或输入框 name 属性，遇到顽固识别不了的网站时使用。</p>
+
+      <div class="divider">站点记录</div>
+      <div id="siteObservationList"></div>
+      <p class="hint">自动记录已扫描网站的字段键、填写结果和经历区块添加统计，仅保存在本机；不保存简历值或网页正文。</p>
+      <button id="clearSiteObservations" class="ghost danger-ghost">清空站点记录</button>
     </section>
     <section class="panel" id="tab-ai">
       <div class="divider">AI 厂商与模型</div>
@@ -150,13 +156,14 @@
   </main>
 
   <footer>
-    <span><span id="saveStatus"></span><span class="version">v1.15.0-dev</span></span>
+    <span><span id="saveStatus"></span><span class="version">v1.15.9-dev</span></span>
     <button id="reviewConflictsBtn" class="link" hidden>核对并发修改</button>
     <button id="saveNowBtn" class="link">立即保存</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
   </footer>
 
   <script src="../shared/providers.js"></script>
+  <script src="../shared/site-observations.js"></script>
   <script src="../shared/feedback-loop.js"></script>
   <script src="../shared/profile-updates.js"></script>
   <script src="../vendor/xlsx.full.min.js"></script>

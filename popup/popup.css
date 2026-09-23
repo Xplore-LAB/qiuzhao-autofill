@@ -291,6 +291,12 @@ button:focus-visible, summary:focus-visible { outline: 2px solid #0e9f8a; outlin
 button:disabled { opacity: .55; cursor: default; }
 .manager-note { padding: 10px 24px; color: #637285; background: #f2f6fb; }
 body.manager { width: min(920px,100%); max-height: none; min-height: 100vh; margin: auto; border-inline: 1px solid #e4e9ec; }
+body.manager { background: #fff; }
+.manager header { background: #fff; padding: 22px 32px; }
+.manager .logo { box-shadow: none; }
+.manager .manager-note { background: #f7f9fa; }
+.manager nav { background: #fff; }
+.manager .resume-intro { background: none; }
 .manager main { max-height: none; overflow: visible; }
 .manager .actions,.manager header .switch { display: none; }
 .manager .panel { padding: 24px 32px; }

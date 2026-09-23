@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const {attach}=require('../shared/run-timing');
+let at=1000;const run={startedAt:1000,phase:'planning'},clock=attach(run,()=>at);
+at=2500;assert.equal(clock.snapshot().elapsedMs,1500);
+assert.equal(clock.snapshot().stageTimes.planning,1500);
+run.phase='ai-mapping';at=4000;run.phase='filling';
+at=6000;run.phase='filling';at=7000;run.phase='self-check';
+at=9000;let end=clock.finish();
+assert.deepEqual(end.stageTimes,{planning:3000,filling:3000,verification:2000});
+assert.equal(end.elapsedMs,8000);
+at=12000;assert.deepEqual(clock.snapshot(),end);assert.deepEqual(clock.finish(),end);
+assert.equal(Object.values(end.stageTimes).reduce((a,b)=>a+b,0),end.elapsedMs);
+run.phase='filling';assert.deepEqual(clock.snapshot(),end);
+console.log('PASS run timing: live samples, phase buckets, repeated phase, frozen finish, total consistency');

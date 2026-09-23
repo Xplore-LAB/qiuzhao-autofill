@@ -1,0 +1,9 @@
+{
+  "app": "qiuzhao-autofill",
+  "kind": "structured-profile",
+  "schemaVersion": 1,
+  "profile": {
+    "name": "请替换为自己的姓名",
+    "email": "example@example.com"
+  }
+}

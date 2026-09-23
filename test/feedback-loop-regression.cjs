@@ -36,6 +36,10 @@ assert.equal(choices.issues.length,3);
 assert.equal(choices.issues.find(i=>i.reason==='no-matching-options').category,'profile');
 assert(choices.issues.filter(i=>i.reason!=='no-matching-options').every(i=>i.category==='inspection'));
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),cp=require('node:child_process');
+const sectionReview=analyze({logs:[run(12,{repeats:[{group:'awardsBulk',requested:20,before:0,after:0,reason:'repeat-section-unobserved'}]})]});
+assert.equal(sectionReview.issues.length,1);assert.equal(sectionReview.issues[0].category,'inspection');
+assert.equal(sectionReview.issues[0].reason,'repeat-section-unobserved');
+for(const reason of ['empty-after-fill','target-mismatch'])assert.equal(analyze({logs:[run(13,{items:[{...failed,reason}]})]}).issues[0].category,'verification');
 const directory=fs.mkdtempSync(path.join(os.tmpdir(),'qiuzhao-feedback-test-'));
 try {
   const file=path.join(directory,'logs.json');

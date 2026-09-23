@@ -1,0 +1,8 @@
+/* Adapt to the browser's resizable sidebar, including narrow widths. */
+body{width:100%;min-width:0;padding:12px}
+header{gap:8px}h1{font-size:15px}.context{margin:12px 0}
+.progress{padding:10px;margin-top:12px}.run-head>div{flex:1;min-width:0}
+.progress-title{gap:6px;flex-wrap:wrap}.result-card{padding:9px}
+.result-summary b{font-size:13px}.result-summary>div+div{padding-left:6px}
+footer{flex-wrap:wrap;margin-top:12px}.result-heading{flex-wrap:wrap}
+#version{font-size:11px;margin-bottom:0}#profile{overflow-wrap:anywhere}

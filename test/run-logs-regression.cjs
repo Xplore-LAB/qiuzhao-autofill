@@ -15,6 +15,8 @@ const api=context.QIUZHAO_RUN_LOGS;
  assert.equal(store.runLogs.filter(r=>r.id===runId).length,1);assert.equal(store.runLogs[0].events[0].sameAsWritten,false);
  assert(!JSON.stringify(store).includes('PRIVATE_NAME'));assert(!JSON.stringify(store).includes('SECRET_KEY'));
  const capped=api.sanitize({events:Array.from({length:700},()=>({stage:'task-start'})),droppedEvents:100},'test');assert.equal(capped.events.length,600);assert.equal(capped.droppedEvents,100);
+ const repeat=api.sanitize({repeats:[{group:'projectsBulk',requested:2,after:0,reason:'repeat-section-unobserved',value:'PRIVATE_NAME'}]},'test');
+ assert.equal(repeat.repeats[0].reason,'repeat-section-unobserved');assert(!JSON.stringify(repeat).includes('PRIVATE_NAME'));
  fail=true;await assert.rejects(api.save(raw));await api.save({...raw,outcome:'fill-cancelled'});
  assert.equal(store.runLogs[0].outcome,'fill-cancelled');
  const dirty=api.sanitize({host:'https://bad/?secret',items:[null],counts:{verified:-1}},'test');assert.equal(dirty.host,'unknown');assert.equal(dirty.counts.verified,0);

@@ -1,4 +1,4 @@
-/* 秋招网申自动填充助手 - content script v1.15.0-dev
+/* 秋招网申自动填充助手 - content script v1.15.9-dev
  *
  * 职责：
  *   1. 识别页面中的网申表单字段（中文/英文；label / placeholder / aria-label / name 属性多路匹配）
@@ -472,6 +472,7 @@
   let programmaticFill = false;
   let ignoreLearningUntil = 0;
   let activeFillRun = null;
+  let lastManualStatus = null;
 
   function checkFillRun() {
     if (!activeFillRun || activeFillRun.cleaning) return;
@@ -778,7 +779,15 @@
         await wait(35);
         if (visibleChoiceLayers().length) {
           const openAnchor = document.querySelector('.phoenix-select--active,.ant-select-open,.el-select.is-focus,.arco-select-view-focus');
-          if (openAnchor && safeCustomClick(openAnchor)) acted = true;
+          if (openAnchor && openAnchor!==activeDatePopup?.anchor && safeCustomClick(openAnchor)) acted = true;
+          // Only toggle a date anchor whose popup this run actually opened.
+          const owned=activeDatePopup;
+          if(!acted && owned && !owned.closeAttempted && owned.anchor.isConnected && isVisible(owned.layer)
+            && ownedChoiceLayer(owned.anchor,visibleChoiceLayers())===owned.layer){
+            owned.closeAttempted=true;
+            acted=safeCustomClick(owned.anchor);
+            if(typeof traceStep==='function')traceStep('date-close',owned.anchor,null,{reason:'owned-anchor-toggle',ok:acted});
+          }
         }
       }
       await wait(80);
@@ -824,6 +833,7 @@
   }
 
   const openDateRanges = new WeakSet();
+  let activeDatePopup=null;
   async function fillCustomDate(anchor, value) {
     if(typeof traceStep==='function')traceStep('date-open',anchor,null);
     const m = String(value).match(/(\d{4})\s*[-年/.]\s*(\d{1,2})(?:\s*[-月/.]\s*(\d{1,2}))?/);
@@ -833,7 +843,11 @@
     const isRangeStart=rangeInputs.length===2 && rangeInputs[0]===anchor;
     // A range is one transaction. Closing after the first date rolls it back in Ant.
     const continuingRange=range && openDateRanges.has(range) && ownedChoiceLayer(anchor,visibleChoiceLayers());
-    if (!continuingRange && !await dismissVisibleChoiceLayers()) return false;
+    if (!continuingRange && !await dismissVisibleChoiceLayers()) {
+      choiceFailureReasons.set(anchor,'choice-layer-close-blocked');
+      if(typeof traceStep==='function')traceStep('date-blocked',anchor,null,{reason:'choice-layer-close-blocked',ok:false});
+      return false;
+    }
     const clickTarget=anchor.matches('.ant-picker-range .ant-picker-input') ? anchor.querySelector('input') : anchor;
     if (!safeCustomClick(clickTarget, !!range)) return false;
     await wait(140);
@@ -845,6 +859,7 @@
     }
     if (!layer) {if(typeof traceStep==='function')traceStep('date-layer',anchor,null,{ok:false});return false;}
     if(typeof traceStep==='function')traceStep('date-layer',anchor,null,{ok:true,range:!!range,start:isRangeStart});
+    if(anchor.matches('.phoenix-select') && layer.matches('.phoenix-date-picker,.common-unmodeled-layer'))activeDatePopup={anchor,layer,closeAttempted:false};
     if (anchor.matches('.ant-picker,.ant-picker-range .ant-picker-input')) {
       let ok=false;
       try { ok=await fillAntCalendar(anchor, layer, m);if(typeof traceStep==='function')traceStep('date-picked',anchor,null,{ok,start:isRangeStart});return ok; }
@@ -1034,10 +1049,46 @@
     } catch(error){checkFillRun();return null;}
   }
 
+  async function settleCustomChoice(anchor, field, value) {
+    const layers = visibleChoiceLayers();
+    const layer = ownedChoiceLayer(anchor, layers);
+    if (layers.length && !layer) {
+      choiceFailureReasons.set(anchor, 'choice-layer-close-blocked');
+      await finishChoiceExperience(anchor, false); return false;
+    }
+    if (layer) {
+      // Close the owning control, never re-click a selected (possibly multi-select) option.
+      const target = anchor.contains(document.activeElement) ? document.activeElement : anchor;
+      target.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',code:'Escape',bubbles:true}));
+      await wait(80);
+      if (isVisible(layer) && anchor.isConnected) { safeCustomClick(anchor); await wait(140); }
+      if (isVisible(layer) || visibleChoiceLayers().length) {
+        choiceFailureReasons.set(anchor, 'choice-layer-close-blocked');
+        await finishChoiceExperience(anchor, false); return false;
+      }
+    }
+    const ok = anchor.isConnected && customControlMatchesValue(anchor, field, value);
+    if (!ok) choiceFailureReasons.set(anchor, 'target-mismatch');
+    await finishChoiceExperience(anchor, ok); return ok;
+  }
+
   async function fillCustomSelect(anchor, field, value) {
     choiceFailureReasons.set(anchor, 'choice-open-failed');
-    if (field && field.type === 'date') return fillCustomDate(anchor, value);
-    if (!await dismissVisibleChoiceLayers()) return false;
+    if (field && field.type === 'date') {
+      const ok=await fillCustomDate(anchor,value);
+      // Ant ranges are committed by their end-date task, never close the start here.
+      if(anchor.closest('.ant-picker-range'))return ok;
+      const closed=await dismissVisibleChoiceLayers();
+      if(!closed){choiceFailureReasons.set(anchor,'choice-layer-close-blocked');return false;}
+      if(!ok)return false;
+      if(!customDateMatchesTarget(anchor,value)){choiceFailureReasons.set(anchor,'target-mismatch');return false;}
+      return true;
+    }
+    if (!await dismissVisibleChoiceLayers()) {
+      choiceFailureReasons.set(anchor,'choice-layer-close-blocked');
+      if(typeof traceStep==='function')traceStep('choice-blocked',anchor,field,{reason:'choice-layer-close-blocked',ok:false});
+      return false;
+    }
     if(typeof traceStep==='function')traceStep('choice-open',anchor,field);
     if(anchor.matches?.('.ant-select')) {
       const trigger=anchor.querySelector('.ant-select-selector');
@@ -1112,12 +1163,12 @@
 
     if (clicked && await confirmChoiceSelection(anchor, field, value)) {
       await wait(350);
-      if(customControlMatchesValue(anchor,field,value)){if(typeof traceStep==='function')traceStep('choice-confirmed',anchor,field,{matchesTarget:true});await finishChoiceExperience(anchor,true);return true;}
+      if(customControlMatchesValue(anchor,field,value)){if(typeof traceStep==='function')traceStep('choice-confirmed',anchor,field,{matchesTarget:true});return settleCustomChoice(anchor,field,value);}
     }
     if (!clicked && layer && isVisible(layer)) await dismissVisibleChoiceLayers();
     for (let attempt = 0; clicked && attempt < 10; attempt++) {
       await wait(80);
-      if (customControlMatchesValue(anchor, field, value)) {await finishChoiceExperience(anchor,true);return true;}
+      if (customControlMatchesValue(anchor, field, value)) return settleCustomChoice(anchor,field,value);
     }
     await dismissVisibleChoiceLayers();
     await finishChoiceExperience(anchor,false);
@@ -1310,11 +1361,39 @@
     return Array.from(row.querySelectorAll('[aria-invalid="true"],.el-form-item__error,.ant-form-item-explain-error,.phoenix-formItem__error'))
       .some(isVisible) || el.getAttribute('aria-invalid') === 'true';
   }
+  function auditMatchesTarget(record){
+    const {el,field,expectedValues=[]}=record;
+    if(!expectedValues.length)return false;
+    if(field.type==='date')return expectedValues.some(value=>customDateMatchesTarget(el,value));
+    if(isCustomSelect(el)||isCustomRadioGroup(el))return expectedValues.some(value=>customControlMatchesValue(el,field,value));
+    // Native choices were resolved to option values during writing; compare that
+    // committed snapshot, since source labels need not equal the option's value.
+    if(el.tagName==='SELECT'||isRadio(el))return record.after===auditValue(el);
+    const actual=String(el.getAttribute('contenteditable')==='true'?el.textContent:el.value||'');
+    return expectedValues.some(value=>actual===String(value));
+  }
+
+  function customDateMatchesTarget(el,value){
+    const parts=text=>{
+      const result=String(text||'').trim().match(/^(\d{4})\s*[-年/.]\s*(\d{1,2})(?:\s*[-月/.]\s*(\d{1,2}))?\s*[月日]?$/);
+      if(!result || +result[1]<1 || +result[2]<1 || +result[2]>12)return null;
+      if(result[3] && (+result[3]<1 || +result[3]>new Date(+result[1],+result[2],0).getDate()))return null;
+      return result;
+    };
+    const target=parts(value);if(!target)return false;
+    const texts=isCustomSelect(el)?customControlValueTexts(el):[el.value];
+    return texts.some(text=>{const actual=parts(text);return actual && +actual[1]===+target[1] && +actual[2]===+target[2] && (!target[3]||+actual[3]===+target[3]);});
+  }
+
   async function runSelfCheck(summary) {
     activeFillRun.phase = 'self-check';
-    await dismissVisibleChoiceLayers();
-    await wait(800);
     const records = activeFillRun.auditRecords || [];
+    const hadOpenChoices=visibleChoiceLayers().length>0;
+    await dismissVisibleChoiceLayers();
+    // Plain native fields have already passed the five-second settlement window.
+    // Keep the extra UI-settle delay only for widgets that can commit after closing.
+    const needsComponentSettle=hadOpenChoices||records.some(r=>isCustomSelect(r.el)||isCustomRadioGroup(r.el)||r.el.closest?.('.ant-picker,.el-date-editor,.arco-picker,.phoenix-datepicker'));
+    if(needsComponentSettle)await wait(800);
     const initial = new Map(records.map(r => [r.el, auditValue(r.el)]));
     await wait(400);
     const targets = new Map(), items = [], seen = new Set();
@@ -1333,6 +1412,8 @@
       else if (r.skipped) {status='manual';reason='existing-unverified';}
       else if (!r.verified) {status='failed';reason=r.failureReason || 'not-verified';}
       else if (initial.get(r.el) !== auditValue(r.el) || r.after !== auditValue(r.el)) {status='failed';reason='value-reverted';}
+      else if (!controlHasValue(r.el)) {status='failed';reason='empty-after-fill';}
+      else if (!auditMatchesTarget(r)) {status='failed';reason='target-mismatch';}
       add(r.el,r.field.label,status,reason,r.field.key);
     }
     for (const el of collectControls(true)) {
@@ -1354,6 +1435,36 @@
     return a === b ? 0 : (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
   }
 
+  // Keep the current work visible without moving a page that the user is reading.
+  // A manual scroll pauses this assistance briefly; it never changes a field's focus.
+  function followCurrentField(el) {
+    const run = activeFillRun;
+    if (!run || run.cleaning || !el || !el.isConnected || Date.now() < (run.followPausedUntil || 0)) return;
+    const target = el.closest?.('.ant-form-item, .el-form-item, .form-item, .form-group, [role="group"]') || el;
+    if (!target.scrollIntoView) return;
+    const rect = target.getBoundingClientRect?.();
+    const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+    const comfortablyVisible = rect && viewportHeight && rect.top >= 96 && rect.bottom <= viewportHeight - 96;
+    if (comfortablyVisible) return;
+    const now = Date.now();
+    if (run.lastFollowedTarget === target && now - (run.lastFollowedAt || 0) < 220) return;
+    run.lastFollowedTarget = target;
+    run.lastFollowedAt = now;
+    target.scrollIntoView({block:'center', inline:'nearest', behavior:'smooth'});
+  }
+
+  function pauseFillFollow() {
+    if (activeFillRun && !activeFillRun.cleaning) activeFillRun.followPausedUntil = Date.now() + 1500;
+  }
+
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('wheel', pauseFillFollow, {capture:true, passive:true});
+    document.addEventListener('touchstart', pauseFillFollow, {capture:true, passive:true});
+    document.addEventListener('keydown', event => {
+      if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) pauseFillFollow();
+    }, true);
+  }
+
   async function executeFillPlan(plan, overwrite, summary, opts) {
     const pending = plan.slice();
     const initiallyNonempty = new Set(plan.filter(task => controlHasValue(task.el)).map(task => task.el));
@@ -1372,7 +1483,7 @@
       if(typeof traceStep==='function')traceStep('task-start',task.el,task.field,{sourcePresent:task.values.some(v=>String(v).trim()),route:task.ai?'ai':'rule'});
       let auditRecord;
       if (activeFillRun) {
-        auditRecord = {el:task.el,field:task.field,before:auditValue(task.el),verified:false,skipped:!taskOverwrite && controlHasValue(task.el)};
+        auditRecord = {el:task.el,field:task.field,expectedValues:task.values.slice(),before:auditValue(task.el),verified:false,skipped:!taskOverwrite && controlHasValue(task.el)};
         (activeFillRun.auditRecords ||= []).push(auditRecord);
       }
       if (activeFillRun) Object.assign(activeFillRun, {phase:'filling', field:task.field.label, total:plan.length, completed:plan.length - pending.length - 1});
@@ -1382,6 +1493,7 @@
         summary.diagnostics.push({field:task.field.key, status:'failed', reason:'control-replaced'});
         continue;
       }
+      followCurrentField(task.el);
       const before = summary.filled.length;
       const diagnosticsBefore = (summary.diagnostics || []).length;
       await applyControl(task.el, task.field, task.values, taskOverwrite, summary, {auto:!!(opts && opts.auto)});
@@ -1431,7 +1543,13 @@
   }
 
   async function applyControl(el, field, values, overwrite, summary, opts) {
+    if(activeFillRun?.siteEducationRestricted && REPEAT_GROUPS[0].fieldKeys.includes(field.key) && !activeFillRun.siteRecordControls?.has(el))return;
     checkFillRun();
+    const decision=activeFillRun?.pageDecisions?.get(el);
+    if(decision && (decision.status!=='mapped' || decision.fieldKey!==field.key)) {
+      traceStep('page-plan-veto',el,field,{reason:decision.status==='mapped'?'field-disagreement':decision.status});
+      return;
+    }
     if (!Array.isArray(values)) values = [values];
     values = values.map(v => String(v == null ? '' : v).trim()).filter(Boolean);
     if (!values.length) return;
@@ -1596,6 +1714,7 @@
   }
 
   function repeatAddControl(group) {
+    if(zhuanzhuanAdapter() && group.bulkKey==='educationBulk')return zhuanzhuanScope(group)?.add || null;
     if(group._root && group._add && group._root.isConnected && group._root.contains(group._add))return group._add;
     const wanted = new Set((group.addLabels || ['添加' + group.label]).map(normalize));
     const candidates = Array.from(document.querySelectorAll('[id$="_addButton"],button,[role="button"],span,div'));
@@ -1610,6 +1729,8 @@
   function genericRepeatScope(group, all = false) {
     // Bind generic Add buttons to their own heading; never search the whole form.
     const titles = new Set([group._scopeTitle || group.label].map(normalize));
+    if(!group._scopeTitle && typeof activeFillRun!=='undefined')
+      for(const section of activeFillRun?.pageSections||[])if(section.category===group.bulkKey && section.root.isConnected)titles.add(normalize(section.title));
     const aliases = {awardsBulk:['竞赛获奖','其他荣誉'],researchBulk:['论文','科研成果'],educationBulk:['教育背景']};
     if(!group._scopeTitle)for (const label of aliases[group.bulkKey] || []) titles.add(normalize(label));
     const found=[];
@@ -1666,6 +1787,7 @@
   }
 
   function repeatSectionRoot(group) {
+    if(zhuanzhuanAdapter() && group.bulkKey==='educationBulk')return zhuanzhuanScope(group)?.root || null;
     if(group._root && group._root.isConnected)return group._root;
     const add = repeatAddControl(group);
     if (!add) return null;
@@ -1712,11 +1834,45 @@
     return count;
   }
 
-  async function ensureRepeatedRows(group, wantedCount) {
-    const capped = Math.min(Math.max(wantedCount, 1), 20);
+  function zhuanzhuanAdapter(){
+    const adapter=globalThis.QIUZHAO_ZHUANZHUAN;
+    return adapter?.matches(location)?adapter:null;
+  }
+
+  function zhuanzhuanScope(group){
+    const scopes=zhuanzhuanAdapter()?.scopes(document,group.label,isVisible)||[];
+    return scopes.length===1?scopes[0]:null;
+  }
+
+  function zhuanzhuanBindings(group,records,controls,texts){
+    const adapter=zhuanzhuanAdapter();
+    if(!adapter || group.bulkKey!=='educationBulk')return null;
+    controls=controls||collectControls(true);
+    const keys=['educationSchool','educationMajor','educationStartDate'];
+    const fields=keys.map(key=>FIELDS.find(field=>field.key===key));
+    const primaries=repeatMatchingControls(group,fields[0],controls,texts);
+    const rows=repeatRowRoots(repeatSectionRoot(group),primaries);
+    const values=rows.map(row=>({
+      empty:!!row&&!controls.some(el=>row.contains(el)&&controlHasValue(el)),
+      values:Object.fromEntries(fields.map(field=>{
+        const targets=repeatMatchingControls(group,field,controls,texts).filter(el=>row?.contains(el));
+        return [field.key,targets.length===1&&!isCustomSelect(targets[0])?String(targets[0].value||''):''];
+      }))
+    }));
+    return {rows,bindings:adapter.bind(records,values,keys)};
+  }
+
+  async function ensureRepeatedRows(group, wantedCount, records) {
+    const binding=records&&zhuanzhuanBindings(group,records);
+    if(binding)wantedCount=binding.rows.length+binding.bindings.filter(item=>item.reason==='new-record-required').length;
+    const capped = Math.min(Math.max(wantedCount, binding?0:1), 20);
     const before = repeatControlCount(group);
     const section = repeatSectionRoot(group);
-    if (!section || (!before && section.querySelector('input,textarea,select,[contenteditable="true"]'))) {
+    const decision=activeFillRun?.pageSectionDecisions?.find(item=>item.root===section);
+    if(decision && (decision.status!=='classified' || decision.category!==group.bulkKey))
+      return {label:group.label,requested:capped,before,after:before,added:0,reason:'section-needs-review'};
+    if(!section)return {label:group.label,requested:capped,before,after:before,added:0,reason:'repeat-section-unobserved'};
+    if (!before && section.querySelector('input,textarea,select,[contenteditable="true"]')) {
       return {label:group.label,requested:capped,before,after:before,added:0,reason:'record-container-unresolved'};
     }
     let count = before;
@@ -1728,15 +1884,19 @@
       count = repeatControlCount(group);
       if (count >= capped) break;
       await dismissVisibleChoiceLayers();
+      checkFillRun();
+      traceStep('record-add-start',null,null,{count:previous,reason:group.bulkKey});
       if (!safeCustomClick(add)) break;
       const next = await waitForRepeatCount(group, previous + 1, 1400);
+      traceStep('record-add-result',null,null,{count:next,ok:next>previous,reason:next>previous?'record-discovered':'no-progress'});
       if (next <= previous) stalled++;
       else stalled = 0;
       count = next;
-      if (stalled >= 2) break;
+      // A delayed add must not receive a second click, which could create duplicates.
+      if (stalled >= (binding?1:2)) break;
     }
     const after = repeatControlCount(group);
-    return { label: group.label, requested: capped, before, after, added: Math.max(0, after - before) };
+    return { label: group.label, requested: capped, before, after, added: Math.max(0, after - before),reason:after>=capped?'records-ready':'record-add-incomplete' };
   }
 
   function repeatRowRoots(section, primaries) {
@@ -1753,9 +1913,33 @@
   }
 
   async function fillRepeatedGroup(group, records, controls, texts, used, fieldByKey, overwrite, summary, opts) {
+    if(!repeatSectionRoot(group)){
+      (summary.diagnostics ||= []).push({field:group.bulkKey,type:'repeat-section',status:'manual',reason:'repeat-section-unobserved'});
+      return;
+    }
+    const sectionDecision=activeFillRun?.pageSectionDecisions?.find(item=>item.root===repeatSectionRoot(group));
+    if(sectionDecision && (sectionDecision.status!=='classified' || sectionDecision.category!==group.bulkKey)) {
+      const root=repeatSectionRoot(group);controls.filter(el=>root?.contains(el)).forEach(el=>used.add(el));
+      summary.failed.push(group.label+'（区块需核对）');return;
+    }
     const primaryField = fieldByKey[group.primaryKey];
     const primaries = primaryField ? repeatMatchingControls(group, primaryField, controls, texts) : [];
-    const rows = repeatRowRoots(repeatSectionRoot(group), primaries);
+    if(!primaries.length){
+      const root=repeatSectionRoot(group);
+      for(const el of controls)if(root.contains(el)){
+        used.add(el);if(activeFillRun)(activeFillRun.repeatControls ||= new Set()).add(el);
+      }
+      (summary.diagnostics ||= []).push({field:group.bulkKey,type:'repeat-section',status:'manual',reason:'record-container-unresolved'});
+      return;
+    }
+    const binding=zhuanzhuanBindings(group,records,controls,texts);
+    const allRows=repeatRowRoots(repeatSectionRoot(group), primaries);
+    const rows=binding?binding.bindings.map(item=>Number.isInteger(item.row)?binding.rows[item.row]:null):allRows;
+    if(binding)binding.bindings.forEach((item,index)=>{
+      if(Number.isInteger(item.row))return;
+      (summary.diagnostics ||= []).push({field:group.primaryKey,record:index+1,type:'repeat',status:'failed',reason:item.reason});
+      summary.failed.push(group.label+'第'+(index+1)+'条（记录未匹配）');
+    });
     const aiMatches=new Map();
     // Unknown labels must be mapped against this record, never the first scalar résumé entry.
     if(activeFillRun && activeFillRun.useAI){
@@ -1802,6 +1986,7 @@
         const value = String(records[index][fieldKey] == null ? '' : records[index][fieldKey]).trim();
         if (!value) continue;
         const row = rows[index];
+        if(binding && !row)continue; // Already reported once at record level.
         const targets = row ? matches.filter(el => row.contains(el)) : [];
         const adapted=aiMatches.get(index+':'+fieldKey);
         if(!targets.length && adapted && !used.has(adapted)){targets.push(adapted);used.add(adapted);}
@@ -1811,12 +1996,13 @@
           summary.diagnostics.push({field: field.key, record: index + 1, type: 'repeat', status: 'failed', reason: !row ? 'record-container-unresolved' : targets.length ? 'record-field-ambiguous' : 'record-field-missing'});
           continue;
         }
+        if(binding && activeFillRun)(activeFillRun.siteRecordControls ||= new Set()).add(targets[0]);
         await applyControl(targets[0], field, value, overwrite, summary, opts);
         if(adapted===targets[0] && opts?.plan?.length){const queued=opts.plan[opts.plan.length-1];if(queued.el===adapted)queued.ai=true;}
       }
     }
     // Reserve unknown row controls too; global AI has no record index context.
-    for(const row of rows.filter(Boolean))for(const el of controls)if(row.contains(el)){
+    for(const row of allRows.filter(Boolean))for(const el of controls)if(row.contains(el)){
       used.add(el);if(activeFillRun)(activeFillRun.repeatControls ||= new Set()).add(el);
     }
   }
@@ -1859,7 +2045,8 @@
   }
 
   async function buildAiRequest(profile, customs, sourceMaterial, plannedControls = new Set()) {
-    const controls = collectControls(true).filter(el => !plannedControls.has(el) && !(activeFillRun && activeFillRun.repeatControls?.has(el)) && !controlHasValue(el)).slice(0, 80);
+    // Scalar decisions are authoritative; newly revealed scalar fields await another scan.
+    const controls = collectControls(true).filter(el => !activeFillRun?.pageDecisions && !plannedControls.has(el) && !(activeFillRun && activeFillRun.repeatControls?.has(el)) && !controlHasValue(el)).slice(0, 80);
     const controlMap = new Map();
     const descriptors = [];
     for (let index = 0; index < controls.length; index++) {
@@ -2136,12 +2323,34 @@
     };
   }
 
+  async function persistSiteScan(overview){
+    const helper=globalThis.QIUZHAO_SITE_OBSERVATIONS;
+    if(!helper||!overview||!Number.isFinite(overview.totalControls))return;
+    try{
+      const stored=await chrome.storage.local.get('siteObservations');
+      const next=helper.recordScan(stored.siteObservations||{},location.hostname,overview);
+      await chrome.storage.local.set({siteObservations:next});
+    }catch(error){/* local observations must never block a scan */}
+  }
+
+  async function persistSiteRun(result){
+    const helper=globalThis.QIUZHAO_SITE_OBSERVATIONS,report=lastSelfCheck?.report;
+    if(!helper||!result)return;
+    const pending=new Set([...(result.failed||[]),...(result.missingData||[]),...(result.remaining||[]),...(result.unmatched||[])]);
+    const repeats=(result.repeatSections||[]).map(item=>({group:REPEAT_GROUPS.find(group=>group.label===item.label)?.bulkKey||'',requested:item.requested,before:item.before,after:item.after,reason:item.reason}));
+    try{
+      const stored=await chrome.storage.local.get('siteObservations');
+      const next=helper.recordRun(stored.siteObservations||{},location.hostname,{outcome:result.note||'finished',verified:report?.counts?.verified||0,pending:pending.size,pageEmpty:result.pageEmptyCount,fields:report?.items||[],repeats});
+      await chrome.storage.local.set({siteObservations:next});
+    }catch(error){/* local observations must never block a completed run */}
+  }
+
   async function scanPage(useAI) {
     if (hasVisiblePassword()) return { note: 'sensitive-page' };
     const store = await chrome.storage.local.get(['profile']);
     const overview = buildPageOverview(store.profile || {});
     overview.aiUsed = false;
-    if (!useAI) return overview;
+    if (!useAI) {await persistSiteScan(overview);return overview;}
     try {
       const response = await diagnosticAiRequest({ type: 'AI_ANALYZE_PAGE', payload: buildOverviewAiPayload(overview) },40000);
       if (response && response.ok && response.overview) {
@@ -2155,7 +2364,7 @@
     } catch (error) {
       overview.aiNote = 'AI 页面总览请求失败';
     }
-    return overview;
+    await persistSiteScan(overview);return overview;
   }
 
   /* ================= 页面级填充流程 =================
@@ -2175,6 +2384,7 @@
     const profile = store.profile || {};
     const summary = { filled: [], skipped: 0, failed: [], repeatSections: [] };
     if (activeFillRun) activeFillRun.summary = summary;
+    if(activeFillRun && zhuanzhuanAdapter())activeFillRun.siteEducationRestricted=!!profile.educationBulk;
 
     const customs = (Array.isArray(profile.customs) ? profile.customs : []).filter(isUsableCustom);
     const learned = store.learned || {};
@@ -2185,7 +2395,7 @@
       .filter(item => item.records.length);
     if (!opts.auto) {
       repeatedGroups = await routeRepeatGroups(repeatedGroups, summary);
-      for (const item of repeatedGroups) summary.repeatSections.push(await ensureRepeatedRows(item.group, item.records.length));
+      for (const item of repeatedGroups) summary.repeatSections.push(await ensureRepeatedRows(item.group, item.records.length, item.records));
     }
 
     const detectedControls = collectControls(true);
@@ -2201,9 +2411,35 @@
       ? detectedControls.filter(el => !isCustomSelect(el) && !isCustomRadioGroup(el))
       : detectedControls;
     const used = new Set();
+    // This profile schema has internships, not employment. Do not let global AI
+    // or scalar fallbacks silently turn an internship into a work record.
+    const siteAdapter=zhuanzhuanAdapter();
+    if(siteAdapter){
+      const workScopes=siteAdapter.scopes(document,'工作经历',isVisible);
+      for(const el of controls)if(workScopes.some(scope=>scope.root.contains(el))){
+        used.add(el);if(activeFillRun)(activeFillRun.repeatControls ||= new Set()).add(el);
+      }
+      if(workScopes.length){
+        summary.failed.push('工作经历（需确认资料对应关系）');
+        (summary.diagnostics ||= []).push({field:'internshipsBulk',status:'manual',reason:'work-profile-mapping-required'});
+      }
+    }
     const fieldByKey = {};
     FIELDS.forEach(f => fieldByKey[f.key] = f);
     summary.overview = buildPageOverview(profile, controls);
+    if(activeFillRun?.pageDecisions) {
+      summary.pagePlan=activeFillRun.pagePlanReport;
+      for(const [el,decision] of activeFillRun.pageDecisions) {
+        if(used.has(el) || !el.isConnected || decision.status!=='mapped' || controlHasValue(el))continue;
+        const field=fieldByKey[decision.fieldKey],value=field && fieldValue(profile,field);
+        if(!value) {
+          (summary.diagnostics ||= []).push({field:decision.fieldKey,status:'missing',reason:'profile-value-missing'});
+          used.add(el);continue;
+        }
+        used.add(el);await applyControl(el,field,value,overwrite,summary,opts);
+      }
+      for(const [el,decision] of activeFillRun.pageDecisions)if(decision.status!=='mapped')used.add(el);
+    }
 
     // 1) 站点规则（按域名，优先级最高）
     for (const rule of rulesForHost(store.siteRules)) {
@@ -2229,6 +2465,12 @@
     // 2) 批量经历。按页面顺序把每条记录写入对应的重复表单行。
     for (const item of repeatedGroups) {
       await fillRepeatedGroup(item.group, item.records, controls, texts, used, fieldByKey, overwrite, summary, opts);
+    }
+    if(siteAdapter && profile.educationBulk){
+      const educationScopes=siteAdapter.scopes(document,'教育经历',isVisible);
+      for(const el of controls)if(educationScopes.some(scope=>scope.root.contains(el))){
+        used.add(el);if(activeFillRun)(activeFillRun.repeatControls ||= new Set()).add(el);
+      }
     }
 
     // 3) 内置字段
@@ -2553,16 +2795,32 @@
     }catch(error){return false;}
   }
 
+  function requiresLongSettlement(record){
+    const el=record?.el;
+    if(!el || !record.verified || record.skipped)return false;
+    if(isCustomSelect(el)||isCustomRadioGroup(el)||isAutocompleteInput(el)||el.getAttribute('contenteditable')==='true')return true;
+    if(el.closest?.('.ant-picker,.el-date-editor,.arco-picker,.phoenix-datepicker,.ant-select,.el-select,.arco-select'))return true;
+    if(el.tagName==='TEXTAREA')return false;
+    if(el.tagName!=='INPUT')return true;
+    return !['','text','email','tel','number','url','search'].includes(inputType(el));
+  }
+
   async function observeRunSettlement(run){
-    for(const delay of [500,1500,3000]){
+    const records=(run.auditRecords||[]).filter(record=>record.verified&&!record.skipped);
+    // Native text writes are read back immediately and need only one quiet-window sample.
+    // Stateful widgets keep the three delayed checks because their visual value can lag commit.
+    const delays=records.some(requiresLongSettlement)?[500,1500,3000]:[450];
+    for(const delay of delays){
       await wait(delay);
-      for(const r of run.auditRecords||[]){
+      for(const r of records){
         traceStep('settlement-check',r.el,r.field,{sameAsWritten:r.after===auditValue(r.el),previousVerified:r.verified});
       }
     }
   }
 
   async function runAutoFill(){
+    if(activeFillRun)return {filled:[],failed:[],note:'manual-run-active'};
+    try{await ensureDefaultProfileLoaded();}catch{return {filled:[],failed:[],note:'default-profile-unavailable'};}
     if(activeFillRun)return {filled:[],failed:[],note:'manual-run-active'};
     const run={startedAt:Date.now(),automatic:true,useAI:false,overwrite:false};
     const result=await fillPage(false,{auto:true});
@@ -2578,7 +2836,7 @@
     const report=!run.automatic && lastSelfCheck && lastSelfCheck.report;
     return {
       startedAt:run.startedAt,durationMs:Date.now()-run.startedAt,host:location.hostname,
-      contentBuild:'1.15.0-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
+      contentBuild:'1.15.9-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
       events:run.events||[],droppedEvents:run.droppedEvents||0,
       trigger:run.automatic?'automatic':'manual',verification:run.automatic?'immediate':report?'final':'incomplete',
       outcome:['fill-cancelled','fill-timeout','fill-error','sensitive-page'].includes(result.note)?result.note:run.finished||run.automatic?'finished':'running',
@@ -2587,27 +2845,128 @@
       items:(report?.items||records.map((r,i)=>({id:'field-'+(i+1),label:r.field.label,status:'manual',reason:'run-interrupted'}))).map(item=>({
         ordinal:Number(item.id.replace('field-','')),control:report?run.traceIds?.get(lastSelfCheck.targets.get(item.id))||0:0,fieldKey:known.get(item.label)||'unmapped',status:item.status,reason:item.reason
       })),
-      diagnostics:(result.diagnostics||[]).map(d=>({fieldKey:known.get(d.field)||'unmapped',record:d.record,status:d.status,reason:d.reason})),
-      repeats:(result.repeatSections||[]).map(s=>({group:REPEAT_GROUPS.find(g=>g.label===s.label)?.bulkKey||'unmapped',requested:s.requested,before:s.before,after:s.after})),
+      diagnostics:(result.diagnostics||[]).map(d=>({fieldKey:known.get(d.field)||REPEAT_GROUPS.find(g=>g.bulkKey===d.field)?.bulkKey||'unmapped',record:d.record,status:d.status,reason:d.reason})),
+      repeats:(result.repeatSections||[]).map(s=>({group:REPEAT_GROUPS.find(g=>g.label===s.label)?.bulkKey||'unmapped',requested:s.requested,before:s.before,after:s.after,reason:s.reason})),
       persistence:'not-tested'
     };
   }
 
+  function observePlanSections() {
+    const sections=[];
+    for(const heading of document.querySelectorAll('h2,h3,h4,legend,[role="heading"]')) {
+      if(!isVisible(heading))continue;
+      let root=heading.parentElement;
+      for(let depth=0;root && depth<4;depth++,root=root.parentElement) {
+        if(root.matches('form,body,html'))break;
+        if(Array.from(root.querySelectorAll('h2,h3,h4,legend,[role="heading"]')).filter(isVisible).length>1)break;
+        const adds=Array.from(root.querySelectorAll('button,[role="button"]')).filter(el=>isVisible(el)&&!el.disabled&&/^(添加|新增|增加)$/.test(normalize(el.textContent)));
+        if(adds.length===1) {sections.push({id:String(sections.length),title:heading.textContent.trim(),root,add:adds[0]});break;}
+      }
+    }
+    return sections;
+  }
+
+  async function prepareExecutablePagePlan() {
+    const sections=observePlanSections();
+    const repeatRoots=REPEAT_GROUPS.map(group=>repeatSectionRoot(group)).filter(Boolean);
+    const controls=collectControls(true).filter(el=>!sections.some(s=>s.root.contains(el)) && !repeatRoots.some(root=>root.contains(el)));
+    if(controls.length>120 || sections.length>30)throw Error('page-plan-capacity-exceeded');
+    // Reuse only a previously verified mapping for the exact local control identity.
+    // The cache contains labels/names and field keys, never profile values or page content.
+    const cacheKey=el=>{
+      const identity=String(el.getAttribute('name')||el.id||'').trim().toLowerCase();
+      const label=String(bestLabelTextFrom(getTextCandidates(el))||'').trim().toLowerCase();
+      return identity&&label?aiControlKind(el)+'|'+identity+'|'+label:'';
+    };
+    try{
+      const stored=await chrome.storage.local.get('pagePlanCache');
+      const entries=stored.pagePlanCache?.[location.hostname]?.entries;
+      const keyed=controls.map(el=>({el,key:cacheKey(el)}));
+      const byKey=new Map(Array.isArray(entries)?entries.map(entry=>[entry.key,entry]):[]);
+      const known=new Set(FIELDS.map(field=>field.key));
+      const cached=keyed.map(item=>({el:item.el,entry:byKey.get(item.key)}));
+      const fieldKeys=cached.map(item=>item.entry?.fieldKey);
+      if(keyed.length && keyed.every(item=>item.key) && new Set(keyed.map(item=>item.key)).size===keyed.length &&
+        cached.every(item=>item.entry && known.has(item.entry.fieldKey)) && new Set(fieldKeys).size===fieldKeys.length){
+        activeFillRun.pageDecisions=new Map(cached.map(item=>[item.el,{status:'mapped',fieldKey:item.entry.fieldKey}]));
+        activeFillRun.pageSectionDecisions=[];
+        activeFillRun.pagePlanReport={controls:cached.map((item,index)=>({id:String(index),status:'mapped',fieldKey:item.entry.fieldKey,source:'verified-local-cache'})),sections:[],coverage:'verified-local-cache'};
+        traceStep('page-plan-cache-hit',null,null,{count:cached.length});
+        return;
+      }
+    }catch(error){/* cache is optional; model planning remains the safe fallback */}
+    const repeatKeys=new Set(REPEAT_GROUPS.flatMap(group=>group.fieldKeys));
+    const payload={
+      controls:controls.map((el,index)=>({id:String(index),label:bestLabelTextFrom(getTextCandidates(el))||'',kind:aiControlKind(el),required:el.required===true||el.getAttribute('aria-required')==='true',hasValue:controlHasValue(el)})),
+      sections:sections.map(s=>({id:s.id,title:s.title})),
+      fields:FIELDS.filter(f=>!repeatKeys.has(f.key)).map(f=>({key:f.key,label:f.label}))
+    };
+    const response=await diagnosticAiRequest({type:'AI_PLAN_PAGE',payload},12000);
+    checkFillRun();
+    if(!response?.ok || !Array.isArray(response.plan?.controls) || !Array.isArray(response.plan?.sections))throw Error('page-plan-unavailable');
+    const decisions=new Map();
+    controls.forEach((el,index)=>{
+      const matches=response.plan.controls.filter(d=>d.id===String(index));
+      decisions.set(el,matches.length===1?matches[0]:{status:'review'});
+    });
+    activeFillRun.pageDecisions=decisions;
+    activeFillRun.pageSectionDecisions=sections.map(s=>({...s,...(response.plan.sections.find(d=>d.id===s.id)||{status:'review'})}));
+    activeFillRun.pageSections=activeFillRun.pageSectionDecisions.filter(s=>s.status==='classified');
+    activeFillRun.pagePlanReport={controls:response.plan.controls,sections:response.plan.sections,coverage:'visible-scalar-controls-and-heading-add-sections'};
+    activeFillRun.pagePlanCacheCandidates=controls.map(el=>({el,key:cacheKey(el),fieldKey:decisions.get(el)?.fieldKey})).filter(item=>item.key&&item.fieldKey);
+    traceStep('page-plan-ready',null,null,{count:controls.length,reason:'bounded-plan'});
+  }
+
+  async function persistVerifiedPagePlan(run,report){
+    const candidates=run?.pagePlanCacheCandidates;
+    if(!Array.isArray(candidates)||!candidates.length||!lastSelfCheck?.targets)return;
+    const statusByControl=new Map(report.items.map(item=>[lastSelfCheck.targets.get(item.id),item.status]));
+    const verified=candidates.filter(item=>statusByControl.get(item.el)==='verified');
+    if(!verified.length)return;
+    try{
+      const stored=await chrome.storage.local.get('pagePlanCache');
+      const cache=stored.pagePlanCache&&typeof stored.pagePlanCache==='object'?stored.pagePlanCache:{};
+      const prior=Array.isArray(cache[location.hostname]?.entries)?cache[location.hostname].entries:[];
+      const entries=new Map(prior.map(item=>[item.key,item]));
+      for(const item of verified)entries.set(item.key,{key:item.key,fieldKey:item.fieldKey});
+      cache[location.hostname]={entries:Array.from(entries.values()).slice(-120),updatedAt:Date.now()};
+      const hosts=Object.entries(cache).sort((a,b)=>(b[1]?.updatedAt||0)-(a[1]?.updatedAt||0)).slice(0,12);
+      await chrome.storage.local.set({pagePlanCache:Object.fromEntries(hosts)});
+      traceStep('page-plan-cache-save',null,null,{count:verified.length});
+    }catch(error){/* filling result must not depend on this local acceleration cache */}
+  }
+
   async function runManualFill(overwrite, useAI, selfCheck) {
+    activeDatePopup=null;
     lastSelfCheck = null;
-    activeFillRun = {runId:crypto.randomUUID(),startedAt:Date.now(),overwrite:!!overwrite,phase:'planning', field:'', total:0, completed:0, deadline:Date.now()+180000, cancelled:false,selfCheck:!!selfCheck,useAI:!!useAI,adaptationCalls:0};
+    activeFillRun = {runId:crypto.randomUUID(),startedAt:Date.now(),overwrite:!!overwrite,phase:'planning', field:'', total:0, completed:0, deadline:Date.now()+180000, cancelled:false,selfCheck:!!selfCheck,useAI:!!useAI,adaptationCalls:0,followPausedUntil:0};
+    lastManualStatus=null;
+    activeFillRun.clock=globalThis.QIUZHAO_RUN_TIMING?.attach(activeFillRun);
     let finalResult;
     try {
+      await ensureDefaultProfileLoaded();
       traceStep('run-start',null,null,{reason:useAI?'ai-enabled':'ai-disabled'});
       for(const event of preflightAiEvents.filter(e=>Date.now()-e.at<120000))traceStep('preflight-'+event.stage,null,null,event.detail);
       preflightAiEvents=[];
       await persistRunCheckpoint(activeFillRun,{});
-      const result = await fillWithAi(overwrite, useAI);
+      let runUseAI=useAI;
+      if(runUseAI && !hasVisiblePassword()){
+        try{await prepareExecutablePagePlan();}
+        catch(error){
+          runUseAI=false;
+          activeFillRun.aiPlanNote='page-plan-unavailable-local-fallback';
+          traceStep('page-plan-fallback',null,null,{reason:/timeout/i.test(String(error))?'timeout':'unavailable'});
+        }
+      }
+      const result = await fillWithAi(overwrite, runUseAI);
+      if(activeFillRun.aiPlanNote)result.aiNote=activeFillRun.aiPlanNote;
       result.aiAdaptationRequests = activeFillRun.adaptationCalls;
       if (result.note !== 'sensitive-page') {
+        activeFillRun.phase='self-check';
         await observeRunSettlement(activeFillRun);
         // Every manual run audits final values, not only the optional detailed-report mode.
         const report=await runSelfCheck(result);
+        await persistVerifiedPagePlan(activeFillRun,report);
         result.filled=report.items.filter(item=>item.status==='verified').map(item=>item.label);
         for(const item of report.items.filter(item=>item.status==='failed')){
           if(!result.failed.includes(item.label))result.failed.push(item.label);
@@ -2636,9 +2995,21 @@
         }
         activeFillRun.finished=true;
         traceStep('run-end',null,null,{reason:finalResult.note||'finished'});
+        const pending=new Set([...(finalResult.failed||[]),...(finalResult.missingData||[]),...(finalResult.remaining||[]),...(finalResult.unmatched||[])]);
+        const pendingItems=(lastSelfCheck?.report?.items||[]).filter(item=>item.status!=='verified').map(item=>({id:item.id,label:item.label,reason:item.reason}));
+        const structural=new Set();
+        for(const item of finalResult.diagnostics||[]){
+          if(!/^(record-|repeat-section-|source-record-|existing-record-|partial-record-|work-profile-)/.test(item.reason||''))continue;
+          const key=[item.field,item.record,item.reason].join(':');if(structural.has(key))continue;structural.add(key);
+          const label=item.reason==='work-profile-mapping-required'?'工作经历':FIELDS.find(field=>field.key===item.field)?.label || REPEAT_GROUPS.find(group=>group.bulkKey===item.field)?.label || '经历';
+          pendingItems.push({id:null,label:label+(item.record?' 第'+item.record+'条':''),reason:item.reason});
+        }
+        lastManualStatus={running:false,runId:activeFillRun.runId,outcome:finalResult.note||'finished',timing:activeFillRun.clock?.finish(),summary:{verified:(finalResult.filled||[]).length,pending:lastSelfCheck?pendingItems.length:pending.size},pendingItems:pendingItems.slice(0,50)};
+        await persistSiteRun(finalResult);
         finalResult.logSaved=await persistRunCheckpoint(activeFillRun,finalResult);
       }
       activeFillRun = null;
+      activeDatePopup=null;
     }
   }
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -2650,7 +3021,7 @@
       el.scrollIntoView({block:'center',behavior:'smooth'});flash(el);sendResponse({ok:true});return;
     }
     if (msg.type === 'PING') {
-      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.15.0-dev' });
+      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.15.9-dev' });
       return;
     }
     if (msg.type === 'SCAN_FORM') {
@@ -2661,7 +3032,7 @@
     }
     if (msg.type === 'GET_FILL_STATUS') {
       const run = activeFillRun;
-      sendResponse(run ? {running:true, phase:run.phase, field:run.field, total:run.total, completed:run.completed, cancelled:run.cancelled} : {running:false});
+      sendResponse(run ? {running:true,runId:run.runId, phase:run.phase, field:run.field, total:run.total, completed:run.completed, cancelled:run.cancelled,timing:run.clock?.snapshot()} : lastManualStatus||{running:false});
       return;
     }
     if (msg.type === 'STOP_FILL') {
@@ -2704,7 +3075,13 @@
     }
   });
 
+  async function ensureDefaultProfileLoaded() {
+    const result=await boundedRequest(chrome.runtime.sendMessage({type:'LOAD_DEFAULT_PROFILE'}),10000);
+    if(!result?.ok)throw Error('default-profile-unavailable');
+  }
+
   async function init() {
+    try{await ensureDefaultProfileLoaded();}catch{return;}
     const store = await chrome.storage.local.get('settings');
     autoFillEnabled = !!(store.settings && store.settings.autoFill);
     if (autoFillEnabled) {

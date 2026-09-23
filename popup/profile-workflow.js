@@ -148,4 +148,5 @@ async function initProfileWorkflow(store) {
   renderProfileSummary();
   $('#saveStatus').textContent='资料保存在当前浏览器';
   try{renderProfileUpdate();}catch{pendingUpdate=null;workflowStatus('待核对更新格式异常，请重新导入文件。',true);}
+  if(manager && new URLSearchParams(location.search).get('view')==='logs')await showRunLogs();
 }

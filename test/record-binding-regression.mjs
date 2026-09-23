@@ -11,7 +11,7 @@ const dates=[new Element('date'),new Element('date')];
 const rows=[new Element('',[names[0],dates[0]]),new Element('',[names[1]]),new Element('',[names[2],dates[1]])];
 const section=new Element('',rows);
 const writes=[];
-const context={activeFillRun:null,repeatSectionRoot:()=>section,repeatMatchingControls:(_,field)=>field.key==='name'?names:dates,applyControl:async(el,_,value)=>writes.push({el,value})};
+const context={zhuanzhuanBindings:()=>null,activeFillRun:null,repeatSectionRoot:()=>section,repeatMatchingControls:(_,field)=>field.key==='name'?names:dates,applyControl:async(el,_,value)=>writes.push({el,value})};
 vm.createContext(context);
 vm.runInContext(source.slice(source.indexOf('  function repeatRowRoots('),source.indexOf('  function aiControlKind('))+'\nthis.fill=fillRepeatedGroup;this.roots=repeatRowRoots;',context);
 const group={primaryKey:'name',fieldKeys:['name','date']};

@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const source=fs.readFileSync(new URL('../content/content.js',import.meta.url),'utf8');
+let closed=0,value='2020-09',canClose=true,range=false;
+const anchor={closest:()=>range?{}:null};
+const ctx={choiceFailureReasons:new WeakMap(),fillCustomDate:async()=>true,dismissVisibleChoiceLayers:async()=>{closed++;return canClose;},customControlMatchesValue:()=>!!value,customDateMatchesTarget:()=>!!value};
+vm.createContext(ctx);
+vm.runInContext(source.slice(source.indexOf('  async function fillCustomSelect('),source.indexOf('  async function fillCustomRadio('))+';this.fill=fillCustomSelect;',ctx);
+assert.equal(await ctx.fill(anchor,{type:'date'},'2020-09'),true);assert(closed>0,'successful date must close its popup');
+value='';assert.equal(await ctx.fill(anchor,{type:'date'},'2020-09'),false,'closing cannot turn an empty read into success');
+canClose=false;value='2020-09';assert.equal(await ctx.fill(anchor,{type:'date'},'2020-09'),false);
+assert.equal(ctx.choiceFailureReasons.get(anchor),'choice-layer-close-blocked');
+range=true;closed=0;assert.equal(await ctx.fill(anchor,{type:'date'},'2020-09'),true);assert.equal(closed,0,'Ant range start must remain open');
+console.log('PASS date transaction: close, reread, blocked cleanup, preserve Ant range');

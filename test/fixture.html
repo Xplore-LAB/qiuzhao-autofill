@@ -1,0 +1,40 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>通用填表工具验证</title>
+<style>body{font:16px system-ui;max-width:800px;margin:30px auto}label,fieldset{display:block;margin:12px 0}input,button{padding:8px} [hidden]{display:none!important} [role=listbox],[role=tree],[role=dialog]{border:1px solid #999;padding:12px;background:#f5f7fa} [role=option],[role=treeitem]{padding:8px;cursor:pointer}</style>
+<h1>五类组件行为验证</h1><form id="application">
+<label>姓名<input id="name" required></label>
+<label>联系邮箱<input id="email" type="email" required></label>
+<label>毕业院校<input id="school" role="combobox" aria-controls="schools" aria-expanded="false" required></label><div id="schools" role="listbox" hidden></div>
+<label>项目日期范围<input id="range" role="combobox" aria-haspopup="dialog" aria-controls="dates" readonly required></label>
+<div id="dates" role="dialog" aria-label="选择项目日期范围" hidden><label>开始日期<input type="date" id="start"></label><label>结束日期<input type="date" id="end"></label><button type="button" id="confirm">确定</button></div>
+<button id="region" type="button" role="combobox" aria-controls="regions" aria-label="工作地区" aria-required="true">请选择</button><div id="regions" role="tree" hidden></div>
+<fieldset id="educations"><legend>教育经历</legend><button type="button" id="add">添加教育经历</button></fieldset>
+<label>上传简历<input id="file" type="file" required></label><label><input id="consent" type="checkbox" required>真实性声明</label>
+<label>暂不可编辑<input id="disabled" required disabled></label><div id="slider" role="slider" aria-label="期望薪资" aria-required="true" tabindex="0">未设置</div>
+<iframe title="独立表单" srcdoc='<label>框架内姓名<input id="frame-name" required></label>'></iframe><div id="shadow"></div>
+<button id="submit" type="submit">提交申请</button></form>
+<script>
+const mode = new URLSearchParams(location.search).get('case') || 'happy';
+const {application,email,school,schools,range,dates,start,end,confirm,region,regions,educations,add,shadow,submit} = Object.fromEntries(['application','email','school','schools','range','dates','start','end','confirm','region','regions','educations','add','shadow','submit'].map(id=>[id,document.getElementById(id)]));
+window.model = {educations:[],submitClicks:0};
+application.addEventListener('submit',e=>{e.preventDefault();model.submitClicks++});
+submit.addEventListener('click',()=>model.submitClicks++);
+const nameInput = document.getElementById('name');
+nameInput.addEventListener('input',e=>{model.name=e.target.value;if(mode==='rollback')setTimeout(()=>{e.target.value='';model.name=''},150)});
+email.addEventListener('input',e=>model.email=e.target.value);
+school.addEventListener('click',()=>{schools.hidden=false;school.setAttribute('aria-expanded','true')});
+let searchTimer;
+school.addEventListener('input',()=>{schools.replaceChildren();clearTimeout(searchTimer);searchTimer=setTimeout(()=>{
+ if(mode==='missing-option')return;
+ const values=mode==='ambiguous'?['浙江大学','浙江大学']:['浙江大学'];
+ for(const value of values){const option=document.createElement('div');option.setAttribute('role','option');option.textContent=value;option.onclick=()=>{school.value=value;model.school=value;schools.hidden=true;school.setAttribute('aria-expanded','false')};schools.append(option)}
+},100)});
+range.onclick=()=>dates.hidden=false;
+confirm.onclick=()=>{range.value=start.value+' 至 '+end.value;model.range={start:start.value,end:end.value};dates.hidden=true};
+let depth=0;
+function paintRegion(){regions.replaceChildren();const option=document.createElement('div');option.setAttribute('role','treeitem');option.textContent=['广东省','深圳市','南山区'][depth];option.onclick=()=>{if(depth<2){depth++;setTimeout(paintRegion,80)}else{region.textContent='广东省/深圳市/南山区';model.region=['广东省','深圳市','南山区'];regions.hidden=true}};regions.append(option)}
+region.onclick=()=>{depth=0;regions.hidden=false;paintRegion();if(mode==='late-rollback'){nameInput.value='';model.name=''}};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){schools.hidden=true;dates.hidden=true;regions.hidden=true}});
+function addEducation(){const index=model.educations.length;model.educations.push({});const fieldset=document.createElement('fieldset');const legend=document.createElement('legend');legend.textContent='教育经历 '+(index+1);const label=document.createElement('label');label.textContent='学校名称';const input=document.createElement('input');input.id='education-'+index;input.required=true;input.oninput=()=>model.educations[index].school=input.value;label.append(input);fieldset.append(legend,label);educations.append(fieldset)}
+add.onclick=()=>setTimeout(addEducation,80);addEducation();
+const root=shadow.attachShadow({mode:'open'});root.innerHTML='<label>影子内姓名<input id="shadow-name" required></label>';
+</script></html>

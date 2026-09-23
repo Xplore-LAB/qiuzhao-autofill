@@ -6,3 +6,11 @@ node_modules/
 *.log
 test/hisense/reports/
 qiuzhao-autofill-backup-*.json
+artifacts/
+backups/
+.workbuddy/
+content/个人资料*.json
+content/基本信息.md
+content/*.docx
+qiuzhao-run-logs-*.json
+test/*-preview.png

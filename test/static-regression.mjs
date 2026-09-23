@@ -13,15 +13,17 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'u
 const popupHarness = fs.readFileSync(path.join(root, 'test/popup-ui-harness.html'), 'utf8');
 const popupMock = fs.readFileSync(path.join(root, 'test/popup-mock-chrome.js'), 'utf8');
 
-assert.equal(manifest.version, '1.15.0');
+assert.equal(manifest.version, '1.15.9');
+assert.ok(manifest.content_scripts[0].js.includes('shared/site-observations.js'), 'site observation module must load before content logic');
 assert.ok(popupHtml.includes('v'+manifest.version+'-dev'),'popup version mismatch');
+assert.ok(popupHtml.includes('id="siteObservationList"'), 'site observation manager view missing');
 assert.ok(content.includes('customSearchInput(anchor, layer)'), 'searchable custom select support missing');
 assert.ok(content.includes('customControlMatchesValue(anchor, field, value)'), 'custom control verification missing');
 assert.ok(content.includes('dismissVisibleChoiceLayers()'), 'stale choice layer cleanup missing');
 assert.ok(content.includes("new InputEvent('input'"), 'framework-compatible input event missing');
 assert.ok(content.includes('const REPEAT_GROUPS = ['), 'repeatable section support missing');
 assert.ok(content.includes('parseBulkRecords(profile[group.bulkKey], group)'), 'bulk record parser missing');
-assert.ok(content.includes('ensureRepeatedRows(item.group, item.records.length)'), 'repeat row creation missing');
+assert.ok(content.includes('ensureRepeatedRows(item.group, item.records.length, item.records)'), 'repeat row creation missing');
 assert.ok(content.includes("msg.type === 'SCAN_FORM'"), 'page overview message missing');
 assert.ok(content.includes('buildPageOverview(profile, controls)'), 'page overview planning missing');
 assert.ok(content.includes('repeatSectionRoot(group)'), 'repeat section scoping missing');
@@ -59,7 +61,7 @@ assert.ok(popup.includes('XLSX.read'), 'Excel extraction implementation missing'
 for (const vendorFile of ['xlsx.full.min.js', 'mammoth.browser.min.js', 'LICENSE-xlsx.txt', 'LICENSE-mammoth.txt']) {
   assert.ok(fs.statSync(path.join(root, 'vendor', vendorFile)).size > 1000, `missing vendor asset ${vendorFile}`);
 }
-assert.deepEqual(manifest.permissions.sort(), ['contextMenus', 'storage']);
+assert.deepEqual(manifest.permissions.sort(), ['contextMenus', 'sidePanel', 'storage']);
 assert.deepEqual(manifest.optional_host_permissions.sort(), ['http://127.0.0.1/*', 'http://localhost/*', 'https://*/*']);
 assert.deepEqual(manifest.host_permissions.sort(), [
   'https://api.anthropic.com/*',

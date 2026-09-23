@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>秋招自动填充</title><link rel="stylesheet" href="quick.css"><link rel="stylesheet" href="pending.css"></head>
+<body>
+  <header><h1>秋招自动填充</h1><button id="manage" class="text">管理资料 ↗</button></header>
+  <section class="context"><span id="site">连接当前网页…</span><p id="profile">读取资料…</p><span id="mode" class="muted"></span></section>
+  <section class="controls"><button id="start" class="primary" disabled>填写并自检</button><button id="stop" class="secondary" hidden>安全停止</button></section>
+  <section id="progress" class="progress" hidden aria-label="填写进度">
+    <div class="run-head">
+      <span id="state-icon" class="state-icon" aria-hidden="true"></span>
+      <div><span id="state-label" class="state-label">任务进行中</span><div class="progress-title"><strong id="phase">准备中</strong><time id="elapsed">0.0秒</time></div></div>
+    </div>
+    <p id="field" class="field" role="status" aria-live="polite"></p>
+    <div class="bar-wrap"><progress id="bar" aria-label="当前填写操作进度"></progress><span id="progress-meta" class="muted"></span></div>
+    <ol class="stages" aria-label="执行阶段">
+      <li data-stage="planning"><i aria-hidden="true"></i><span>分析与规划</span><time id="time-planning">—</time></li>
+      <li data-stage="filling"><i aria-hidden="true"></i><span>填写</span><time id="time-filling">—</time></li>
+      <li data-stage="verification"><i aria-hidden="true"></i><span>核验</span><time id="time-verification">—</time></li>
+    </ol>
+    <div id="result-card" class="result-card" hidden aria-live="polite">
+      <div class="result-heading"><span id="result-badge" class="result-badge"></span><strong id="result-title"></strong></div>
+      <p id="result-note"></p>
+      <div class="result-summary">
+        <div><b id="verified-count">—</b><span>已核验</span></div>
+        <div><b id="pending-count">—</b><span>需核对</span></div>
+        <div><b>不自动提交</b><span>插件行为</span></div>
+      </div>
+      <div id="pending-list" hidden aria-label="待核对项"></div>
+    </div>
+  </section>
+  <p id="message" role="status" aria-live="polite"></p>
+  <footer><span>保留已有内容 · 不自动提交</span><button id="details" class="text">结果与日志 ↗</button></footer>
+  <p id="version" class="muted"></p>
+  <link rel="stylesheet" href="sidepanel.css">
+  <script src="quick.js"></script>
+</body></html>

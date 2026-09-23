@@ -23,7 +23,7 @@
       counts:{verified:count(raw.counts?.verified),nonempty:count(raw.counts?.nonempty),empty:count(raw.counts?.empty)},aiRequests:count(raw.aiRequests),
       items:(Array.isArray(raw.items)?raw.items:[]).slice(0,300).map(i=>({ordinal:count(i?.ordinal),control:count(i?.control),fieldKey:code(i?.fieldKey),status:status(i?.status),reason:code(i?.reason)})),
       diagnostics:(Array.isArray(raw.diagnostics)?raw.diagnostics:[]).slice(0,300).map(i=>({fieldKey:code(i?.fieldKey),record:count(i?.record),status:status(i?.status),reason:code(i?.reason)})),
-      repeats:(Array.isArray(raw.repeats)?raw.repeats:[]).slice(0,30).map(i=>({group:code(i?.group),requested:count(i?.requested),before:count(i?.before),after:count(i?.after)})),
+      repeats:(Array.isArray(raw.repeats)?raw.repeats:[]).slice(0,30).map(i=>({group:code(i?.group),requested:count(i?.requested),before:count(i?.before),after:count(i?.after),reason:code(i?.reason)})),
       persistence:'not-tested'};
   }
   let queue=Promise.resolve();

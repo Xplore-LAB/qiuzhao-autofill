@@ -6,7 +6,7 @@ const add={id:'education_addButton'};
 const section={contains:el=>[add,heading].includes(el),querySelectorAll:()=>[add]};
 function heading(){}
 heading.contains=()=>false; heading.parentElement=section;
-const context={genericRepeatScope:()=>null,repeatAddControl:()=>add,document:{getElementById:()=>heading,body:{},documentElement:{}}};
+const context={zhuanzhuanAdapter:()=>null,genericRepeatScope:()=>null,repeatAddControl:()=>add,document:{getElementById:()=>heading,body:{},documentElement:{}}};
 vm.createContext(context);
 vm.runInContext(source.slice(source.indexOf('  function repeatSectionRoot('),source.indexOf('  function repeatMatchingControls('))+'\nthis.root=repeatSectionRoot;',context);
 assert.equal(context.root({}),section);

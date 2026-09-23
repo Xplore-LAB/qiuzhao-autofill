@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const {recordScan,recordRun,list}=require('../shared/site-observations');
+let registry=recordScan({},'campus.example',{totalControls:18,emptyControls:9,ruleCandidates:6,aiCandidates:3,repeatSections:[{bulkKey:'educationBulk',records:2,rows:1,addable:true}]},1000);
+registry=recordRun(registry,'campus.example',{outcome:'finished',verified:4,pending:3,pageEmpty:5,fields:[{fieldKey:'name',status:'verified'},{fieldKey:'email',status:'failed'},{fieldKey:'private value',status:'verified'}],repeats:[{group:'educationBulk',requested:2,before:1,after:2,reason:'records-ready'}]},2000);
+const entry=registry['campus.example'];
+assert.equal(entry.scans,1);assert.equal(entry.runs,1);assert.equal(entry.lastRun.verified,4);assert.equal(entry.fields.name.verified,1);assert.equal(entry.fields.email.failed,1);assert.equal(entry.fields['private value'],undefined);assert.deepEqual(entry.repeats.educationBulk,{requested:2,before:1,after:2,added:1,reason:'records-ready',lastSeenAt:2000});
+for(let index=0;index<45;index++)registry=recordScan(registry,'site'+index+'.example',{totalControls:index},3000+index);
+assert.equal(list(registry).length,40);assert.equal(list(registry)[0][0],'site44.example');
+assert.equal(JSON.stringify(registry).includes('private value'),false);
+console.log('PASS site observations: local value-free scan and run evidence, repeat-add summary, host cap');

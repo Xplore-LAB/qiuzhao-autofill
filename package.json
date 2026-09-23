@@ -1,0 +1,11 @@
+{
+  "name": "autofill-tool-benchmark",
+  "version": "0.1.2",
+  "private": true,
+  "scripts": {
+    "test": "node scripts/check-extension.cjs",
+    "test:unit": "node scripts/check-extension.cjs --unit",
+    "test:benchmark": "node test/run.cjs"
+  },
+  "devDependencies": {"playwright": "1.62.1"}
+}

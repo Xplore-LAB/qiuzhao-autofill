@@ -257,16 +257,19 @@ let profile = {};
 let settings = {};
 let learned = {};
 let siteRules = {};
+let siteObservations = {};
 let aiSecrets = {};
 let sourceMaterial = null;
 let currentHost = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const store = await chrome.storage.local.get(['profile', 'settings', 'learned', 'siteRules', 'aiSecrets', 'sourceMaterial', 'pendingProfileUpdate']);
+  const defaultSync=await chrome.runtime.sendMessage({type:'LOAD_DEFAULT_PROFILE'}).catch(()=>({ok:false}));
+  const store = await chrome.storage.local.get(['profile', 'settings', 'learned', 'siteRules', 'siteObservations', 'aiSecrets', 'sourceMaterial', 'pendingProfileUpdate']);
   profile = store.profile || {};
   settings = store.settings || {};
   learned = store.learned || {};
   siteRules = store.siteRules || {};
+  siteObservations = store.siteObservations || {};
   aiSecrets = store.aiSecrets || {};
   sourceMaterial = store.sourceMaterial || null;
   if (!settings.aiProvider) settings.aiProvider = settings.aiEndpoint ? 'custom' : 'openai';
@@ -278,9 +281,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   buildPanels();
   buildCustoms();
   buildLearned();
+  buildSiteObservations();
   bind();
   renderSourceMaterial();
   await initProfileWorkflow(store);
+  $('#defaultFileStatus').textContent=defaultSync?.ok?'默认资料：content/个人资料.json'+(defaultSync.changed?' · 已应用文件更新':' · 文件未变化，保留管理页修改'):'默认资料文件读取失败；请检查文件并重新加载扩展。';
+  if(!defaultSync?.ok)workflowStatus('默认资料文件不可用，现有资料保留。修正文件后再填写。',true);
   detectHost();
 });
 
@@ -484,6 +490,20 @@ function buildRules() {
   for (const r of rules) list.appendChild(ruleRow(r));
 }
 
+function buildSiteObservations(){
+  const list=$('#siteObservationList');list.replaceChildren();
+  const helper=globalThis.QIUZHAO_SITE_OBSERVATIONS;
+  const entries=helper?helper.list(siteObservations):Object.entries(siteObservations).sort((a,b)=>(b[1]?.lastSeenAt||0)-(a[1]?.lastSeenAt||0));
+  if(!entries.length){const hint=document.createElement('p');hint.className='hint';hint.textContent='尚未记录招聘网站。扫描或填写一次后会自动出现。';list.append(hint);return;}
+  for(const [host,entry] of entries){
+    const row=document.createElement('div');row.className='site-observation';
+    const title=document.createElement('strong');title.textContent=host;
+    const meta=document.createElement('span');const last=entry.lastRun||{};
+    meta.textContent='扫描 '+(entry.scans||0)+' 次 · 填写 '+(entry.runs||0)+' 次'+(entry.runs?' · 已核验 '+(last.verified||0)+' 项':'');
+    row.append(title,meta);list.append(row);
+  }
+}
+
 /* ---------- Word / Excel / 文本资料 ---------- */
 
 function setSourceStatus(text, state) {
@@ -669,6 +689,11 @@ function bind() {
     await chrome.storage.local.set({ learned });
     buildLearned();
     flashSaved('已清空');
+  });
+  $('#clearSiteObservations').addEventListener('click', async () => {
+    if(!Object.keys(siteObservations).length)return;
+    if(!confirm('清空所有站点记录？这不会删除个人资料或站点规则。'))return;
+    siteObservations={};await chrome.storage.local.set({siteObservations});buildSiteObservations();flashSaved('站点记录已清空');
   });
 
   $('#aiProvider').addEventListener('change', changeAiProvider);
@@ -1048,6 +1073,10 @@ function renderSelfCheck(report, tabId) {
   const root = $('#selfCheckResult');root.hidden=false;root.replaceChildren();
   const names={failed:'填写失败',missing:'补充资料',empty:'空白待判断',existing:'已有内容待核对',recheck:'重新核对',verified:'已验证'};
   const reasons={
+    'repeat-section-unobserved':'区块未识别，可能尚未展开或当前页面不提供。请按区块核对。',
+    'empty-after-fill':'回读仍为空，不能算成功。请核对控件是否真正提交了选项。',
+    'target-mismatch':'最终值与资料目标不符，请定位核对。',
+    'choice-layer-close-blocked':'前一弹层未关闭，此控件暂未填写。请核对弹层状态。',
     'no-visible-options':'未取得可见候选项。请定位到网页，检查下拉框是否加载或需要输入搜索词。',
     'no-matching-options':'没有可匹配的选项。请核对资料与网站选项，必要时在网页手动选择。',
     'ambiguous-options':'候选项有歧义。请在网页选择准确项，不要反复整页重填。',
@@ -1119,13 +1148,13 @@ async function fillCurrentTab(selfCheck) {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab || tab.id == null) { showResult('未找到当前标签页', true); return; }
     const runtime=await withUiTimeout(chrome.tabs.sendMessage(tab.id,{type:'PING'}),3000);
-    if(!runtime || runtime.contentBuild!=='1.15.0-dev'){
+    if(!runtime || runtime.contentBuild!=='1.15.9-dev'){
       showResult('页面仍在使用旧版脚本。请先重新加载扩展，再刷新招聘页面后重试；本次未开始填写。',true);return;
     }
     fillSession = {tabId:tab.id, stopped:false, timer:null, polling:false};
     $('#stopFillBtn').hidden = false;
     $('#fillProgress').textContent = '正在分析页面';
-    const overview = await withUiTimeout(chrome.tabs.sendMessage(tab.id, { type: 'SCAN_FORM', useAI: !!settings.aiEnabled }), 45000);
+    const overview = await withUiTimeout(chrome.tabs.sendMessage(tab.id, { type: 'SCAN_FORM', useAI: false }), 45000);
     if (fillSession.stopped) {showResult('已停止，未启动填写。', false); return;}
     if (overview && overview.note === 'sensitive-page') {
       showResult('已跳过：该页面包含密码输入框，插件不会扫描或填写登录页面。', true);
@@ -1143,7 +1172,7 @@ async function fillCurrentTab(selfCheck) {
       ? overview.repeatSections.filter(item => item.records > 1).map(item => item.label + ' ' + item.records + ' 条').join('、')
       : '';
     showResult(overviewText + (repeatPlan ? '；多条资料：' + repeatPlan : ''), false);
-    btn.textContent = '正在按总览填写…';
+    btn.textContent = settings.aiEnabled?'正在规划并填写…':'正在按规则填写…';
     const session = fillSession;
     session.timer = setInterval(async () => {
       if (session.polling || session !== fillSession) return;
@@ -1191,6 +1220,10 @@ async function fillCurrentTab(selfCheck) {
     const parts = [];
     if (Number.isFinite(res && res.pageFilledCount)) parts.push('当前页面已填写 ' + res.pageFilledCount + ' 个字段，空白 ' + res.pageEmptyCount + ' 个');
     parts.push(overviewText);
+    if(res && res.pagePlan) {
+      const decisions=res.pagePlan.controls||[],sections=res.pagePlan.sections||[];
+      parts.push('执行计划：字段映射 '+decisions.filter(d=>d.status==='mapped').length+' 项，待核对 '+decisions.filter(d=>d.status==='review').length+' 项；区块分类 '+sections.filter(d=>d.status==='classified').length+' 项，未分类 '+sections.filter(d=>d.status!=='classified').length+' 项。范围限可见字段及可绑定添加入口的区块');
+    }
     const repeated = Array.isArray(res && res.repeatSections) ? res.repeatSections : [];
     const repeatedText = repeated.filter(item => item.requested > 1)
       .map(item => item.label + ' ' + item.after + '/' + item.requested + ' 条')
@@ -1255,7 +1288,7 @@ async function fillCurrentTab(selfCheck) {
 
 async function exportData() {
   try{await persistProfileEdits();}catch(error){saveError(error);return;}
-  const store = await chrome.storage.local.get(['learned']);
+  const store = await chrome.storage.local.get(['learned', 'siteObservations']);
   const exportedSettings = Object.assign({}, settings);
   delete exportedSettings.aiProviderModels;
   const payload = {
@@ -1266,6 +1299,7 @@ async function exportData() {
     settings: exportedSettings,
     learned: store.learned || {},
     siteRules,
+    siteObservations: store.siteObservations || {},
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -1282,10 +1316,11 @@ async function importData(e) {
   e.target.value = '';
   if (!file) return;
   try {
-    if(file.size>5*1024*1024)throw Error('备份文件不能超过 5MB');
+    if(file.size>5*1024*1024)throw Error('资料 JSON 不能超过 5MB');
     const data = JSON.parse(await file.text());
-    if (!data || typeof data !== 'object' || !Object.hasOwn(data,'profile') || (data.app && data.app!=='qiuzhao-autofill')) throw Error('请选择本插件导出的资料备份');
-    await stageProfileUpdate(data.profile,'从备份恢复资料');
+    if (!data || typeof data !== 'object' || !Object.hasOwn(data,'profile') || (data.app && data.app!=='qiuzhao-autofill')) throw Error('请选择包含 profile 的本插件资料 JSON 或备份');
+    if (data.kind==='structured-profile' && data.schemaVersion!==1) throw Error('不支持此结构化资料版本');
+    await stageProfileUpdate(data.profile,data.kind==='structured-profile'?'导入结构化资料':'从备份恢复资料');
   } catch (err) {
     selectProfileTab('resume');workflowStatus('导入未应用：'+(err.message||'文件格式不正确'), true);
   }

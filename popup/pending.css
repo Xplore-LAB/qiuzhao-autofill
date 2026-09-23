@@ -1,0 +1,8 @@
+#pending-list{margin-top:12px;border-top:1px solid #edf0f2;max-height:220px;overflow-y:auto}
+#pending-list>div{padding:8px 0;border-bottom:1px solid #edf0f2}
+#pending-list button{display:block;text-align:left;overflow-wrap:anywhere}
+#pending-list button:disabled{color:#52616e;cursor:default}
+#pending-list span{display:block;color:#78838e;font-size:11px}
+.progress[data-state="partial"] .state-icon{background:#ae792e;box-shadow:0 0 0 4px #fbf0dc}
+.progress[data-state="partial"] .result-badge{background:#fbf0dc;color:#976521}
+#version{font-size:10px;margin:8px 0 0}

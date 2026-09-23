@@ -1,6 +1,12 @@
 /* Turn diagnostic metadata into investigation groups, never inferred fixes. */
 (() => {
   const policies = {
+    'repeat-section-unobserved': ['inspection', '经历区块未识别', '可能未展开、当前页面未提供或识别失败；按区块核对，不逐字段认定漏填。'],
+    'record-container-unresolved': ['inspection', '经历结构未确定', '已发现区块但无法确定记录边界；补充最小结构，不重复点击新增。'],
+    'section-needs-review': ['inspection', '经历区块需确认', '确认区块对应的资料类别，再继续填写。'],
+    'empty-after-fill': ['verification', '填写后仍为空', '检查是否只改了弹层草稿，或读值方式遗漏真实值；不能算作成功。'],
+    'target-mismatch': ['verification', '最终值与目标不符', '检查控件提交值及日期格式，不能只凭值保持不变判成功。'],
+    'choice-layer-close-blocked': ['adapter', '前一弹层未关闭', '检查本轮已打开弹层的关闭契约，不随意点击页面其他按钮。'],
     'no-visible-options': ['inspection', '未取得候选项', '核对搜索词与页面空态；可能是资料不在选项库，也可能是加载失败，勿直接认定控件故障。'],
     'no-matching-options': ['profile', '资料与候选项不匹配', '核对原始资料与网站选项；多个备选渠道需明确一个，不自动替换为相近选项。'],
     'ambiguous-options': ['inspection', '候选项存在歧义', '补充准确名称或人工选择；不按包含关系任选一个专业或学校。'],
@@ -67,6 +73,9 @@
         if (item && ['failed','missing','manual'].includes(item.status)) add(item, !incomplete && items.length ? 'final-field' : 'diagnostic');
       }
       for (const section of list(log.repeats).slice(0, 30)) {
+        if(section && ['repeat-section-unobserved','record-container-unresolved','section-needs-review'].includes(section.reason)){
+          add({fieldKey:section.group,reason:section.reason,status:'manual'},'repeat-section');continue;
+        }
         if (section && Number.isSafeInteger(section.requested) && Number.isSafeInteger(section.after) && section.requested > section.after) {
           add({fieldKey:section.group, reason:'rows-not-created', status:'failed'}, 'repeat-section');
         }
