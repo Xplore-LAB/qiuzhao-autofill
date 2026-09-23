@@ -10,7 +10,7 @@ const context={setTimeout,clearTimeout,setInterval,clearInterval,collect:()=>{},
   showResult:text=>results.push(text),
   chrome:{storage:{local:{set:async()=>{}}},tabs:{query:async()=>[{id:1}],sendMessage:async(_,message)=>{
     messages.push(message.type);
-    if(message.type==='PING')return {ok:true,contentBuild:'1.16.11-dev'};
+    if(message.type==='PING')return {ok:true,contentBuild:'1.16.12-dev'};
     if(message.type==='SCAN_FORM') return {totalControls:3,ruleCandidates:3,aiCandidates:0};
     if(message.type==='FILL_FORM') {assert.equal(message.overwrite,true);started();return new Promise(resolve=>finish=resolve);}
     if(message.type==='STOP_FILL') {finish({note:'fill-cancelled',filled:['姓名']});return {ok:true};}

@@ -1240,7 +1240,7 @@ async function fillCurrentTab(selfCheck) {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab || tab.id == null) { showResult('未找到当前标签页', true); return; }
     const runtime=await withUiTimeout(chrome.tabs.sendMessage(tab.id,{type:'PING'},{frameId:0}),3000);
-    if(!runtime || runtime.contentBuild!=='1.16.11-dev'){
+    if(!runtime || runtime.contentBuild!=='1.16.12-dev'){
       showResult('页面仍在使用旧版脚本。请先重新加载扩展，再刷新招聘页面后重试；本次未开始填写。',true);return;
     }
     fillSession = {tabId:tab.id, stopped:false, timer:null, polling:false};

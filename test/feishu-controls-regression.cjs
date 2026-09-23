@@ -4,6 +4,7 @@ const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.AUTOFILL_BROWSER_PATH});
+ const measurements=[];
  try{for(const initial of [0,1]){
   const page=await browser.newPage();
   await page.route('**/*',r=>r.fulfill({contentType:'text/html',body:'<style>[hidden]{display:none!important}.ud__select{width:220px;padding:10px}.ud-formily-item{margin:8px}</style><main></main><button id="save">完成</button>'}));
@@ -43,7 +44,8 @@ const root=path.resolve(__dirname,'..');
   },initial);
   for(const script of JSON.parse(fs.readFileSync(path.join(root,'manifest.json'))).content_scripts[0].js)await page.addScriptTag({path:path.join(root,script)});
   const fill=()=>page.evaluate(()=>new Promise(resolve=>listener({type:'FILL_FORM',overwrite:false,selfCheck:true,useAI:false},null,resolve)));
-  const result=await fill();
+  const started=Date.now();const result=await fill();
+  measurements.push({initialRows:initial,elapsedMs:Date.now()-started,verified:result.selfCheck?.counts.verified,version:JSON.parse(fs.readFileSync(path.join(root,'manifest.json'))).version});
   assert.equal(result.selfCheck?.counts.verified,39,JSON.stringify(result));
   const snapshot=()=>page.evaluate(()=>Array.from(document.querySelectorAll('.apply-form-array-card__fixture')).map(r=>({text:Array.from(r.querySelectorAll('input:not([role]),textarea')).map(e=>e.value),choices:Array.from(r.querySelectorAll('.ud__select__selector__selectItem')).map(e=>e.textContent)})));
   const expected=[{text:['演示高中','理科','2019-09','2022-06'],choices:['高中','统招全日制']},{text:['演示大学','计算机','2022-09','2026-06'],choices:['本科','统招全日制']},{text:[],choices:['英语','熟练']},{text:[],choices:['日语','入门']}];
@@ -52,5 +54,5 @@ const root=path.resolve(__dirname,'..');
   assert.deepEqual(await snapshot(),expected);await fill();assert.deepEqual(await snapshot(),expected);
   assert.equal(await page.evaluate(()=>saves),0);assert.equal(await page.locator('.ud__select__dropdown:visible').count(),0);
   console.log('PASS Feishu controls: '+initial+' initial rows, native month ranges, UD choice commits, record isolation and idempotence');await page.close();
- }}finally{await browser.close();}
+ }}finally{await browser.close();if(process.env.QIUZHAO_BENCHMARK_OUTPUT)fs.writeFileSync(process.env.QIUZHAO_BENCHMARK_OUTPUT,JSON.stringify({scope:'isolated-feishu-39-control-fixture',measurements},null,2)+'\n');}
 })().catch(e=>{console.error(e);process.exitCode=1;});

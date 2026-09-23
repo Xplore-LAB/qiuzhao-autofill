@@ -1,4 +1,4 @@
-/* 秋招网申自动填充助手 - content script v1.16.11-dev
+/* 秋招网申自动填充助手 - content script v1.16.12-dev
  *
  * 职责：
  *   1. 识别页面中的网申表单字段（中文/英文；label / placeholder / aria-label / name 属性多路匹配）
@@ -483,7 +483,6 @@
 
   function matchScore(field, candidates, el) {
     if (!candidates || !candidates.length) return 0;
-    if (field.scope && (!el || !field.scope.test(controlScopeText(el)))) return 0;
     const normed = candidates.map(c => ({ n: normalize(c.text), w: c.w }));
     if (normed.some(c => c.n && field.excludes && field.excludes.some(re => re.test(c.n)))) return 0;
     let best = 0;
@@ -497,6 +496,9 @@
         }
       }
     }
+    // Most fields cannot match this label. Walk ancestor/sibling text only for
+    // positive candidates; scope validation itself is unchanged.
+    if (best && field.scope && (!el || !field.scope.test(controlScopeText(el)))) return 0;
     return best;
   }
 
@@ -1141,6 +1143,7 @@
       await finishChoiceExperience(anchor, false); return false;
     }
     const antSelect = !!anchor.matches?.('.ant-select');
+    const udSelect = !!anchor.matches?.('.ud__select');
     // A selected Ant option can commit before its leave animation finishes.
     // Wait for automatic closure before sending Escape or toggling the anchor.
     if (layer && antSelect) await waitForControlState(() => !isVisible(layer), 520);
@@ -1149,10 +1152,12 @@
       const target = anchor.contains(document.activeElement) ? document.activeElement : anchor;
       target.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',code:'Escape',bubbles:true}));
       if (antSelect) await waitForControlState(() => !isVisible(layer), 520);
+      else if(udSelect)await waitForControlState(() => !isVisible(layer), 400);
       else await wait(80);
       if (isVisible(layer) && anchor.isConnected) {
-        safeCustomClick(anchor);
+        safeCustomClick(udSelect ? anchor.querySelector('.ud__select__selector') : anchor);
         if (antSelect) await waitForControlState(() => !isVisible(layer), 520);
+        else if(udSelect)await waitForControlState(() => !isVisible(layer), 400);
         else await wait(140);
       }
       if (isVisible(layer) || visibleChoiceLayers().length) {
@@ -1188,6 +1193,7 @@
     }
     if(typeof traceStep==='function')traceStep('choice-open',anchor,field);
     const antSelect = !!anchor.matches?.('.ant-select');
+    const udSelect = !!anchor.matches?.('.ud__select');
     if(antSelect) {
       const trigger=anchor.querySelector('.ant-select-selector');
       if(!trigger || !isVisible(trigger))return false;
@@ -1200,11 +1206,11 @@
         anchor.querySelector('input')?.focus({preventScroll:true});
       } finally {programmaticFill=false;}
     } else if (!safeCustomClick(anchor.matches('.ud__select') ? anchor.querySelector('.ud__select__selector') : anchor)) return false;
-    if (antSelect) await waitForControlState(() => !!ownedChoiceLayer(anchor, visibleChoiceLayers()), 960);
+    if (antSelect || udSelect) await waitForControlState(() => !!ownedChoiceLayer(anchor, visibleChoiceLayers()), 960);
     else await wait(140);
 
     let layers = visibleChoiceLayers();
-    for (let attempt = 0; !antSelect && !layers.length && attempt < 10; attempt++) {
+    for (let attempt = 0; !antSelect && !udSelect && !layers.length && attempt < 10; attempt++) {
       await wait(80);
       layers = visibleChoiceLayers();
     }
@@ -1252,9 +1258,12 @@
       clicked = true;
       if(typeof traceStep==='function')traceStep('choice-clicked',anchor,field,{matchesTarget:customControlMatchesValue(anchor,field,value)});
       choiceFailureReasons.set(anchor, 'choice-not-committed');
-      if (antSelect && !placeAware) {
+      if ((antSelect && !placeAware) || udSelect) {
         await waitForControlState(() => customControlMatchesValue(anchor, field, value) || !ownedChoiceLayer(anchor, visibleChoiceLayers()), 160);
       } else await wait(140);
+      // UD multiselect keeps its menu open after committing a tag. Do not spend
+      // another search window looking for (or toggling) the value we just chose.
+      if (udSelect && customControlMatchesValue(anchor,field,value)) break;
       layers = visibleChoiceLayers();
       if (!layers.length) break;
       layer = ownedChoiceLayer(anchor, layers);
@@ -1263,7 +1272,7 @@
     }
 
     if (clicked && await confirmChoiceSelection(anchor, field, value)) {
-      if (antSelect && !placeAware) {
+      if ((antSelect && !placeAware) || udSelect) {
         // This is a readiness check, not proof against delayed rollback. Keep the
         // run settlement window and final target verification below unchanged.
         await waitForControlState(() => anchor.isConnected && customControlMatchesValue(anchor, field, value), 360, 2);
@@ -1889,7 +1898,7 @@
     const titles = new Set([group._scopeTitle || group.label].map(normalize));
     if(!group._scopeTitle && typeof activeFillRun!=='undefined')
       for(const section of activeFillRun?.pageSections||[])if(section.category===group.bulkKey && section.root.isConnected)titles.add(normalize(section.title));
-    const aliases = {worksBulk:['作品'],awardsBulk:['获奖','竞赛获奖','其他荣誉'],researchBulk:['论文','科研成果'],educationBulk:['教育背景']};
+    const aliases = {worksBulk:['作品'],awardsBulk:['获奖','竞赛获奖','其他荣誉'],researchBulk:['论文','科研成果'],educationBulk:['教育背景'],projectsBulk:['项目经验'],internshipsBulk:['实习经验']};
     if(!group._scopeTitle)for (const label of aliases[group.bulkKey] || []) titles.add(normalize(label));
     const found=[];
     for (const heading of document.querySelectorAll('h2,h3,h4,legend,[role="heading"],.applyFormModuleWrapper-left')) {
@@ -1967,7 +1976,7 @@
     if (!root) return [];
     // The verified section boundary provides scope even if site-generated IDs vary.
     const scopedField = Object.assign({}, field, {scope:null});
-    const aliases={educationSchool:/^学校$/,educationMajor:/^专业$/,educationRank:/^成绩排名$/,internshipCompany:/^公司$/,internshipRole:/^职位名称$/,internshipContent:/^职责描述$|^描述$/,projectDescription:/^描述$/,projectRole:/^项目角色$/,languageType:/^语言$/,languageProficiency:/^精通程度$/,researchName:/^论文标题$|^论文名称$|^标题$/,awardName:/^名称$|^奖项$|^竞赛名称$|^荣誉名称$/,awardLevel:/^竞赛获奖等级$/,awardDate:/^竞赛获奖时间$/,awardDescription:/^描述$/,workDescription:/^描述$/};
+    const aliases={educationSchool:/^学校$/,educationMajor:/^专业$/,educationRank:/^成绩排名$/,internshipCompany:/^公司$/,internshipRole:/^职位名称$/,internshipContent:/^职责描述$|^描述$|^工作职责$/,projectDescription:/^描述$/,projectRole:/^项目角色$/,languageType:/^语言$/,languageProficiency:/^精通程度$/,researchName:/^论文标题$|^论文名称$|^标题$/,awardName:/^名称$|^奖项$|^竞赛名称$|^荣誉名称$/,awardLevel:/^竞赛获奖等级$/,awardDate:/^竞赛获奖时间$/,awardDescription:/^描述$/,workDescription:/^描述$/};
     if(aliases[field.key])scopedField.patterns=[aliases[field.key],...field.patterns];
     const source = controls || collectControls(true);
     const textMap = texts || new Map(source.map(el => [el, getTextCandidates(el)]));
@@ -3039,7 +3048,7 @@
     const report=!run.automatic && lastSelfCheck && lastSelfCheck.report;
     return {
       startedAt:run.startedAt,durationMs:Date.now()-run.startedAt,host:location.hostname,
-      contentBuild:'1.16.11-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
+      contentBuild:'1.16.12-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
       events:run.events||[],droppedEvents:run.droppedEvents||0,
       trigger:run.automatic?'automatic':'manual',verification:run.automatic?'immediate':report?'final':'incomplete',
       outcome:['fill-cancelled','fill-timeout','fill-error','sensitive-page'].includes(result.note)?result.note:run.finished||run.automatic?'finished':'running',
@@ -3223,7 +3232,7 @@
     if (msg.type === 'PROBE_FORM_FRAMES') {
       const sensitive=hasVisiblePassword();
       chrome.runtime.sendMessage({type:'REPORT_FORM_FRAME',requestId:msg.requestId,
-        frame:{contentBuild:'1.16.11-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
+        frame:{contentBuild:'1.16.12-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
         .then(()=>sendResponse({ok:true}),()=>sendResponse({ok:false}));
       return true;
     }
@@ -3234,7 +3243,7 @@
       el.scrollIntoView({block:'center',behavior:'smooth'});flash(el);sendResponse({ok:true});return;
     }
     if (msg.type === 'PING') {
-      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.11-dev' });
+      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.12-dev' });
       return;
     }
     if (msg.type === 'SCAN_FORM') {

@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../content/content.js'),'utf8');
+let scans=0,scope='教育经历';
+const ctx={normalize:s=>String(s).trim(),controlScopeText:()=>{scans++;return scope;}};
+vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('  function matchScore('),source.indexOf('  const STRICT_MATCH_SCORE')),ctx);
+const field={patterns:[/^学校$/],scope:/教育经历/,excludes:[/联系/]},el={};
+for(let i=0;i<100;i++)assert.equal(ctx.matchScore(field,[{text:'邮箱',w:10}],el),0);
+assert.equal(scans,0,'unrelated labels must not repeatedly scan the DOM');
+assert.equal(ctx.matchScore(field,[{text:'学校',w:10}],el),11);assert.equal(scans,1);
+scope='实习经历';assert.equal(ctx.matchScore(field,[{text:'学校',w:10}],el),0,'keep exact section boundaries');
+assert.equal(ctx.matchScore(field,[{text:'学校',w:10},{text:'联系',w:1}],el),0,'exclusions still veto');
+assert.equal(ctx.matchScore(field,[{text:'学校',w:10}],null),0,'scoped fields still require a control');
+console.log('PASS matching scope: skip unrelated DOM walks, retain scores, exclusions and section boundaries');

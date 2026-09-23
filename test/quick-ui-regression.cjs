@@ -8,7 +8,7 @@ window.__fixture={state:null,requests:[]};
 chrome={storage:{local:{get:async()=>({profile:{name:'演示姓名',educationBulk:[{},{}]},settings:{aiEnabled:true}})}},runtime:{getURL:p=>'https://fixture.invalid/'+p,sendMessage:async()=>({ok:true,changed:false,frames:[{frameId:0,host:'fixture.invalid',totalControls:3}]})},tabs:{query:async()=>[{id:7}],create:async({url})=>{window.__fixture.opened=url;},sendMessage:async(id,m)=>{
  const f=window.__fixture;f.requests.push(m);
  if(m.type==='PREVIEW_FORM')return {previewToken:'demo-preview',totalControls:3,filledControls:0,ruleCandidates:2,aiCandidates:1,ruleLabels:['姓名'],repeatSections:[]};
- if(m.type==='PING')return {host:'fixture.invalid',contentBuild:'1.16.11-dev'};
+ if(m.type==='PING')return {host:'fixture.invalid',contentBuild:'1.16.12-dev'};
  if(m.type==='GET_FILL_STATUS')return f.state?{...f.state,timing:f.clock.snapshot()}:{running:false};
  if(m.type==='FILL_FORM'){f.run={phase:'planning',startedAt:Date.now()};f.clock=QIUZHAO_RUN_TIMING.attach(f.run);f.state={running:true,total:0,completed:0};return new Promise(resolve=>f.finish=()=>{f.clock.finish();f.state={running:false,outcome:'finished',summary:{verified:2,pending:1}};resolve({filled:['演示字段']});});}
  if(m.type==='STOP_FILL'){f.stopped=true;return {ok:true};}
@@ -44,7 +44,7 @@ chrome={storage:{local:{get:async()=>({profile:{name:'演示姓名',educationBul
   await page.locator('#pending-list button').waitFor();
   assert((await page.locator('#pending-list').textContent()).includes('保留已有内容，请确认'));
   await page.locator('#pending-list button').click();assert.equal(await page.evaluate(()=>__fixture.located),'field-3');
-  assert((await page.locator('#version').textContent()).includes('1.16.11'));
+  assert((await page.locator('#version').textContent()).includes('1.16.12'));
   const end=await page.locator('#elapsed').textContent();await page.waitForTimeout(350);assert.equal(await page.locator('#elapsed').textContent(),end);
   const fill=await page.evaluate(()=>__fixture.requests.find(r=>r.type==='FILL_FORM'));
   assert.deepEqual(fill,{type:'FILL_FORM',overwrite:false,useAI:true,selfCheck:true,previewToken:'demo-preview'});
