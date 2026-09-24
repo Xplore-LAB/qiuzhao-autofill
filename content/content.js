@@ -1,4 +1,4 @@
-/* 秋招网申自动填充助手 - content script v1.16.12-dev
+/* 秋招网申自动填充助手 - content script v1.16.13-dev
  *
  * 职责：
  *   1. 识别页面中的网申表单字段（中文/英文；label / placeholder / aria-label / name 属性多路匹配）
@@ -865,12 +865,10 @@
         : '.phoenix-calendar-month-panel-next-year-btn,.phoenix-calendar-next-year-btn';
       const button = layer.querySelector(buttonSelector);
       if (!button || !safeCustomClick(button)) break;
-      for (let retry = 0; retry < 15; retry++) {
-        await wait(80);
+      if (!await waitForControlState(() => {
         const updated = String(layer.querySelector(yearSelector)?.textContent || '').match(/\d{4}/);
-        if (updated && Number(updated[0]) !== currentYear) break;
-        if (retry === 14) return false;
-      }
+        return updated && Number(updated[0]) !== currentYear;
+      }, 1200)) return false;
     }
     const yearNode = layer.querySelector(yearSelector);
     const selectedYear = Number((String(yearNode && yearNode.textContent || '').match(/\d{4}/) || [0])[0]);
@@ -879,11 +877,8 @@
     const monthCell = monthCells.find(cell => normalize(cell.textContent) === String(targetMonth) + '月');
     const target = monthCell && (monthCell.querySelector('.phoenix-calendar-month-panel-month') || monthCell);
     if (!target || /disabled/.test(monthCell.className) || target.getAttribute('aria-disabled') === 'true' || !safeCustomClick(target)) return false;
-    for (let retry = 0; retry < 15; retry++) {
-      await wait(100);
-      if (customControlMatchesValue(anchor, { type: 'date' }, targetYear + '-' + pad2(targetMonth))) return true;
-    }
-    return false;
+    return waitForControlState(() => anchor.isConnected &&
+      customControlMatchesValue(anchor, { type: 'date' }, targetYear + '-' + pad2(targetMonth)), 1500);
   }
 
   const openDateRanges = new WeakSet();
@@ -905,11 +900,12 @@
     const clickTarget=anchor.matches('.ant-picker-range .ant-picker-input') ? anchor.querySelector('input') : anchor;
     if (!safeCustomClick(clickTarget, !!range)) return false;
     const antDate = anchor.matches('.ant-picker,.ant-picker-range .ant-picker-input');
-    if (antDate) await waitForControlState(() => !!ownedChoiceLayer(anchor, visibleChoiceLayers()), 1640);
+    const phoenixDate = anchor.matches('.phoenix-select');
+    if (antDate || phoenixDate) await waitForControlState(() => !!ownedChoiceLayer(anchor, visibleChoiceLayers()), 1640);
     else await wait(140);
     let layers = visibleChoiceLayers();
     let layer = ownedChoiceLayer(anchor, layers);
-    for (let attempt = 0; !antDate && !layer && attempt < 15; attempt++) {
+    for (let attempt = 0; !antDate && !phoenixDate && !layer && attempt < 15; attempt++) {
       await wait(100);
       layer = ownedChoiceLayer(anchor, visibleChoiceLayers());
     }
@@ -935,7 +931,8 @@
     if (input && isVisible(input)) {
       setNativeValue(input, date);
       fireEnter(input);
-      await wait(240);
+      if (phoenixDate) await waitForControlState(() => customControlMatchesValue(anchor, { type: 'date' }, date), 240);
+      else await wait(240);
       if (customControlMatchesValue(anchor, { type: 'date' }, date)) { await dismissVisibleChoiceLayers(); return true; }
     }
     if (layer.querySelector('.phoenix-calendar-date-panel')) {
@@ -1144,19 +1141,20 @@
     }
     const antSelect = !!anchor.matches?.('.ant-select');
     const udSelect = !!anchor.matches?.('.ud__select');
-    // A selected Ant option can commit before its leave animation finishes.
+    const phoenixSelect = !!anchor.matches?.('.phoenix-select');
+    // A selected Ant/Phoenix option can commit before its leave animation finishes.
     // Wait for automatic closure before sending Escape or toggling the anchor.
-    if (layer && antSelect) await waitForControlState(() => !isVisible(layer), 520);
+    if (layer && (antSelect || phoenixSelect)) await waitForControlState(() => !isVisible(layer), 520);
     if (layer && isVisible(layer)) {
       // Close the owning control, never re-click a selected (possibly multi-select) option.
       const target = anchor.contains(document.activeElement) ? document.activeElement : anchor;
       target.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',code:'Escape',bubbles:true}));
-      if (antSelect) await waitForControlState(() => !isVisible(layer), 520);
+      if (antSelect || phoenixSelect) await waitForControlState(() => !isVisible(layer), 520);
       else if(udSelect)await waitForControlState(() => !isVisible(layer), 400);
       else await wait(80);
       if (isVisible(layer) && anchor.isConnected) {
         safeCustomClick(udSelect ? anchor.querySelector('.ud__select__selector') : anchor);
-        if (antSelect) await waitForControlState(() => !isVisible(layer), 520);
+        if (antSelect || phoenixSelect) await waitForControlState(() => !isVisible(layer), 520);
         else if(udSelect)await waitForControlState(() => !isVisible(layer), 400);
         else await wait(140);
       }
@@ -1194,6 +1192,7 @@
     if(typeof traceStep==='function')traceStep('choice-open',anchor,field);
     const antSelect = !!anchor.matches?.('.ant-select');
     const udSelect = !!anchor.matches?.('.ud__select');
+    const phoenixSelect = !!anchor.matches?.('.phoenix-select');
     if(antSelect) {
       const trigger=anchor.querySelector('.ant-select-selector');
       if(!trigger || !isVisible(trigger))return false;
@@ -1206,11 +1205,11 @@
         anchor.querySelector('input')?.focus({preventScroll:true});
       } finally {programmaticFill=false;}
     } else if (!safeCustomClick(anchor.matches('.ud__select') ? anchor.querySelector('.ud__select__selector') : anchor)) return false;
-    if (antSelect || udSelect) await waitForControlState(() => !!ownedChoiceLayer(anchor, visibleChoiceLayers()), 960);
+    if (antSelect || udSelect || phoenixSelect) await waitForControlState(() => !!ownedChoiceLayer(anchor, visibleChoiceLayers()), 960);
     else await wait(140);
 
     let layers = visibleChoiceLayers();
-    for (let attempt = 0; !antSelect && !udSelect && !layers.length && attempt < 10; attempt++) {
+    for (let attempt = 0; !antSelect && !udSelect && !phoenixSelect && !layers.length && attempt < 10; attempt++) {
       await wait(80);
       layers = visibleChoiceLayers();
     }
@@ -1258,7 +1257,7 @@
       clicked = true;
       if(typeof traceStep==='function')traceStep('choice-clicked',anchor,field,{matchesTarget:customControlMatchesValue(anchor,field,value)});
       choiceFailureReasons.set(anchor, 'choice-not-committed');
-      if ((antSelect && !placeAware) || udSelect) {
+      if (((antSelect || phoenixSelect) && !placeAware) || udSelect) {
         await waitForControlState(() => customControlMatchesValue(anchor, field, value) || !ownedChoiceLayer(anchor, visibleChoiceLayers()), 160);
       } else await wait(140);
       // UD multiselect keeps its menu open after committing a tag. Do not spend
@@ -1272,7 +1271,7 @@
     }
 
     if (clicked && await confirmChoiceSelection(anchor, field, value)) {
-      if ((antSelect && !placeAware) || udSelect) {
+      if (((antSelect || phoenixSelect) && !placeAware) || udSelect) {
         // This is a readiness check, not proof against delayed rollback. Keep the
         // run settlement window and final target verification below unchanged.
         await waitForControlState(() => anchor.isConnected && customControlMatchesValue(anchor, field, value), 360, 2);
@@ -3048,7 +3047,7 @@
     const report=!run.automatic && lastSelfCheck && lastSelfCheck.report;
     return {
       startedAt:run.startedAt,durationMs:Date.now()-run.startedAt,host:location.hostname,
-      contentBuild:'1.16.12-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
+      contentBuild:'1.16.13-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
       events:run.events||[],droppedEvents:run.droppedEvents||0,
       trigger:run.automatic?'automatic':'manual',verification:run.automatic?'immediate':report?'final':'incomplete',
       outcome:['fill-cancelled','fill-timeout','fill-error','sensitive-page'].includes(result.note)?result.note:run.finished||run.automatic?'finished':'running',
@@ -3232,7 +3231,7 @@
     if (msg.type === 'PROBE_FORM_FRAMES') {
       const sensitive=hasVisiblePassword();
       chrome.runtime.sendMessage({type:'REPORT_FORM_FRAME',requestId:msg.requestId,
-        frame:{contentBuild:'1.16.12-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
+        frame:{contentBuild:'1.16.13-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
         .then(()=>sendResponse({ok:true}),()=>sendResponse({ok:false}));
       return true;
     }
@@ -3243,7 +3242,7 @@
       el.scrollIntoView({block:'center',behavior:'smooth'});flash(el);sendResponse({ok:true});return;
     }
     if (msg.type === 'PING') {
-      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.12-dev' });
+      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.13-dev' });
       return;
     }
     if (msg.type === 'SCAN_FORM') {

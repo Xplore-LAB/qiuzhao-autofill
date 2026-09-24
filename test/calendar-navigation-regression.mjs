@@ -10,8 +10,9 @@ const layer={querySelector(selector){
   if(selector.includes('month-select'))return {textContent:month+'月'};
   return {action(){if(selector.includes('prev-year'))year--;else if(selector.includes('next-year'))year++;else if(selector.includes('prev-month'))month--;else month++;}};
 },querySelectorAll:()=>[cell]};
-const context={Date,wait:async()=>{},safeCustomClick:el=>{el.action();return true;},customControlMatchesValue:(_,__,value)=>value===committed,pad2:n=>String(n).padStart(2,'0'),normalize:s=>s};
+const context={Date,checkFillRun:()=>{},wait:async()=>{},safeCustomClick:el=>{el.action();return true;},customControlMatchesValue:(_,__,value)=>value===committed,pad2:n=>String(n).padStart(2,'0'),normalize:s=>s};
 vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('  async function waitForControlState('),source.indexOf('  async function waitForVisibleQuery(')),context);
 vm.runInContext(source.slice(source.indexOf('  async function fillPhoenixDayPicker('),source.indexOf('  function customSearchInput('))+'\nthis.day=fillPhoenixDayPicker;',context);
 assert.equal(await context.day({},layer,['','2024','10','15']),true);
 assert.equal(committed,'2024-10-15');assert.deepEqual(actions,['day']);
@@ -22,6 +23,6 @@ const inner={getAttribute:()=>null,action(){committed=year+'-10';}};
 const monthCell={className:'',textContent:'10月',querySelector:()=>inner};
 layer.querySelectorAll=()=>[monthCell];
 vm.runInContext(source.slice(source.indexOf('  async function fillPhoenixMonthPicker('),source.indexOf('  async function fillCustomDate('))+'\nthis.month=fillPhoenixMonthPicker;',context);
-assert.equal(await context.month({},layer,['','2024','10']),true);
+assert.equal(await context.month({isConnected:true},layer,['','2024','10']),true);
 assert.equal(committed,'2024-10');
 console.log('calendar navigation passed: year/month navigation, exact day, invalid/disabled dates, inner month target and readback');
