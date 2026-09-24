@@ -1,4 +1,4 @@
-/* 秋招网申自动填充助手 - content script v1.16.13-dev
+/* 秋招网申自动填充助手 - content script v1.16.14-dev
  *
  * 职责：
  *   1. 识别页面中的网申表单字段（中文/英文；label / placeholder / aria-label / name 属性多路匹配）
@@ -1885,7 +1885,7 @@
     const wanted = new Set((group.addLabels || ['添加' + group.label]).map(normalize));
     const candidates = Array.from(document.querySelectorAll('[id$="_addButton"],button,[role="button"],span,div'));
     for (const node of candidates) {
-      if (!isVisible(node) || !wanted.has(normalize(node.textContent))) continue;
+      if (!wanted.has(normalize(node.textContent)) || !isVisible(node)) continue;
       return node.closest('[id$="_addButton"]') || node.closest('button,[role="button"]') || node.parentElement || node;
     }
     const scope = genericRepeatScope(group);
@@ -1901,13 +1901,13 @@
     if(!group._scopeTitle)for (const label of aliases[group.bulkKey] || []) titles.add(normalize(label));
     const found=[];
     for (const heading of document.querySelectorAll('h2,h3,h4,legend,[role="heading"],.applyFormModuleWrapper-left')) {
-      if (!isVisible(heading) || !titles.has(normalize(heading.textContent))) continue;
+      if (!titles.has(normalize(heading.textContent)) || !isVisible(heading)) continue;
       let root=heading.parentElement;
       for(let depth=0;root && depth<4;depth++,root=root.parentElement){
         if(root.matches('form,body,html'))break;
         const headings=Array.from(root.querySelectorAll('h2,h3,h4,legend,[role="heading"],.applyFormModuleWrapper-left')).filter(isVisible);
         if(headings.length>1)break;
-        const buttons=Array.from(root.querySelectorAll('button,[role="button"]')).filter(b=>isVisible(b)&&!b.disabled&&/^(添加|新增|增加)$/.test(normalize(b.textContent)));
+        const buttons=Array.from(root.querySelectorAll('button,[role="button"]')).filter(b=>!b.disabled&&/^(添加|新增|增加)$/.test(normalize(b.textContent))&&isVisible(b));
         if(buttons.length===1){found.push({root,add:buttons[0],title:heading.textContent.trim()});break;}
       }
     }
@@ -1977,10 +1977,12 @@
     const scopedField = Object.assign({}, field, {scope:null});
     const aliases={educationSchool:/^学校$/,educationMajor:/^专业$/,educationRank:/^成绩排名$/,internshipCompany:/^公司$/,internshipRole:/^职位名称$/,internshipContent:/^职责描述$|^描述$|^工作职责$/,projectDescription:/^描述$/,projectRole:/^项目角色$/,languageType:/^语言$/,languageProficiency:/^精通程度$/,researchName:/^论文标题$|^论文名称$|^标题$/,awardName:/^名称$|^奖项$|^竞赛名称$|^荣誉名称$/,awardLevel:/^竞赛获奖等级$/,awardDate:/^竞赛获奖时间$/,awardDescription:/^描述$/,workDescription:/^描述$/};
     if(aliases[field.key])scopedField.patterns=[aliases[field.key],...field.patterns];
-    const source = controls || collectControls(true);
+    // Inspect labels only inside the current section. Re-evaluate on each call:
+    // dynamic additions, moved controls and changed labels must remain observable.
+    const source = (controls || collectControls(true)).filter(el => root.contains(el));
     const textMap = texts || new Map(source.map(el => [el, getTextCandidates(el)]));
     return source
-      .filter(el => root.contains(el) && matchScore(scopedField, textMap.get(el) || getTextCandidates(el), el) >= STRICT_MATCH_SCORE)
+      .filter(el => matchScore(scopedField, textMap.get(el) || getTextCandidates(el), el) >= STRICT_MATCH_SCORE)
       .sort((a, b) => a === b ? 0 : (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
   }
 
@@ -3047,7 +3049,7 @@
     const report=!run.automatic && lastSelfCheck && lastSelfCheck.report;
     return {
       startedAt:run.startedAt,durationMs:Date.now()-run.startedAt,host:location.hostname,
-      contentBuild:'1.16.13-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
+      contentBuild:'1.16.14-dev',useAI:run.useAI,overwrite:run.overwrite,runId:run.runId,
       events:run.events||[],droppedEvents:run.droppedEvents||0,
       trigger:run.automatic?'automatic':'manual',verification:run.automatic?'immediate':report?'final':'incomplete',
       outcome:['fill-cancelled','fill-timeout','fill-error','sensitive-page'].includes(result.note)?result.note:run.finished||run.automatic?'finished':'running',
@@ -3231,7 +3233,7 @@
     if (msg.type === 'PROBE_FORM_FRAMES') {
       const sensitive=hasVisiblePassword();
       chrome.runtime.sendMessage({type:'REPORT_FORM_FRAME',requestId:msg.requestId,
-        frame:{contentBuild:'1.16.13-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
+        frame:{contentBuild:'1.16.14-dev',totalControls:sensitive?0:collectControls(true).length,sensitive}})
         .then(()=>sendResponse({ok:true}),()=>sendResponse({ok:false}));
       return true;
     }
@@ -3242,7 +3244,7 @@
       el.scrollIntoView({block:'center',behavior:'smooth'});flash(el);sendResponse({ok:true});return;
     }
     if (msg.type === 'PING') {
-      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.13-dev' });
+      sendResponse({ ok: true, host: location.hostname, contentBuild:'1.16.14-dev' });
       return;
     }
     if (msg.type === 'SCAN_FORM') {
